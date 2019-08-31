@@ -8,6 +8,6 @@ export default {
   },
   getPrefs() {
     const data = localStorage.getItem('prefs');
-    return data || this.setPrefs(DEFAULT_PREFERENCES);
+    return data ? JSON.parse(data) : this.setPrefs(DEFAULT_PREFERENCES);
   }
 }
