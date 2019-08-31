@@ -13,7 +13,7 @@ const App = props => {
       const date = Date.now();
       setUnixTime(date);
     }, prefs.updateInterval * 1000);
-    return () => clearTimeout(id);
+    return () => clearInterval(id);
   }, []);
   return <div>Title is {title}, Seconds since midnight is {secondsSinceMidnight}</div>;
 };
