@@ -1,7 +1,7 @@
 const TITLE_SEARCH = {
   "2019-08-30T01:07:15.378Z": "Test failed",
   "2019-08-30T01:07:49.745Z": "Test success"
-};
+}
 const TITLE_SEARCH_KEYS = Object.keys(TITLE_SEARCH);
 export default rawDate => {
   const date = new Date(rawDate);

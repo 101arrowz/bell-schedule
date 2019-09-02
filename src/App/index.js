@@ -1,20 +1,15 @@
-import { useState, useEffect } from 'preact/hooks';
-import PreferenceManager from '../logic/PreferenceManager';
+import { Fragment } from 'preact'
+import useTime from '../logic/useTime'
+import useWebStorage from '../logic/useWebStorage';
 import getTitle from '../logic/getTitle';
-const originalTime = Date.now();
 const offsetInMillis = -((new Date()).getTimezoneOffset() * 60 * 1000);
 const App = props => {
-  let [unixTime, setUnixTime] = useState(originalTime);
+  let [prefs, setPrefs] = useWebStorage('prefs', {
+    updateInterval: 30
+  });
+  let unixTime = useTime(prefs.updateInterval * 1000);
   const title = getTitle(unixTime);
   const secondsSinceMidnight = ((unixTime + offsetInMillis) % (24 * 60 * 60 * 1000)) / 1000;
-  let prefs = PreferenceManager.getPrefs();
-  useEffect(() => {
-    const id = setInterval(() => {
-      const date = Date.now();
-      setUnixTime(date);
-    }, prefs.updateInterval * 1000);
-    return () => clearInterval(id);
-  }, []);
-  return <div>Title is {title}, Seconds since midnight is {secondsSinceMidnight}</div>;
+  return <div>WIP</div>;
 };
 export default App;
