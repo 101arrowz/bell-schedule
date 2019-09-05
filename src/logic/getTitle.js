@@ -1,6 +1,6 @@
+// Simply add new entries that Date.parse() supports as keys, with the actual titles as values.
 const TITLE_SEARCH = {
-  "2019-08-30T01:07:15.378Z": "Test failed",
-  "2019-08-30T01:07:49.745Z": "Test success"
+  "8/26/19": "Welcome back! Tell a freshman about this website."
 }
 const TITLE_SEARCH_KEYS = Object.keys(TITLE_SEARCH);
 export default rawDate => {

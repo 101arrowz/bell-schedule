@@ -1,15 +1,14 @@
-import { Fragment } from 'preact'
-import useTime from '../logic/useTime'
-import useWebStorage from '../logic/useWebStorage';
-import getTitle from '../logic/getTitle';
-const offsetInMillis = -((new Date()).getTimezoneOffset() * 60 * 1000);
-const App = props => {
+import Calendar from '../Calendar';
+import { useTime, useWebStorage, getTitle } from '../logic'
+const App = () => {
   let [prefs, setPrefs] = useWebStorage('prefs', {
     updateInterval: 30
   });
   let unixTime = useTime(prefs.updateInterval * 1000);
   const title = getTitle(unixTime);
-  const secondsSinceMidnight = ((unixTime + offsetInMillis) % (24 * 60 * 60 * 1000)) / 1000;
-  return <div>WIP</div>;
+  // secondsSinceMidnight is not meant to take DST into account - current implementation is optimal
+  let unixDate = new Date(unixTime);
+  const secondsSinceMidnight = unixDate.getHours() * 3600 + unixDate.getMinutes() * 60 + unixDate.getSeconds();
+  return <Calendar date={unixDate} by='month' />;
 };
 export default App;

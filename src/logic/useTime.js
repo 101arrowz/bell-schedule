@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'preact/hooks';
-const useTime = interval => {
+export default (interval, asDateObject = false) => {
   const [updateVal, update] = useState(false); // Used to force updates
   useEffect(() => {
     const id = setTimeout(() => update(!updateVal), interval);
     return () => clearTimeout(id);
   });
-  return Date.now();
-}
-export default useTime;
+  return asDateObject ? new Date() : Date.now();
+};
