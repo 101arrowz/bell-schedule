@@ -12,7 +12,6 @@ const getDateArray = (origDate, type = 'week') => {
   let dateArray = [];
   let currentInd = -1;
   if (type === 'month') {
-    currentInd = [-1, -1];
     let startDate = new Date(year, month);
     let endDate = new Date(year, month+1, 0);
     let tmpArr = [];
@@ -48,9 +47,27 @@ const getDateArray = (origDate, type = 'week') => {
   }
   console.log(dateArray);
   return {dateArray, currentInd};
-}
-const recurseGetJSX = events => {
-  
+};
+const WeirdFlex = ({ children, size, direction, ...props }) =>
+  <div style={{
+    display: 'flex',
+    flexDirection: direction || 'row',
+    ...(size ? {flex: ''+size} : {})
+  }} {...props} >
+    {children}
+  </div>
+const recurseGetJSX = (data, key) => {
+  if (data instanceof Array) {
+    const content = data.map((el, ind) => recurseGetJSX(el, ind.toString())); // Maybe use something other than index later
+    return (
+      <WeirdFlex>
+        {content}
+      </WeirdFlex>
+    );
+  }
+  if (data instanceof Date) {
+    
+  }
 };
 const Calendar = ({date, by = 'week', names: {
   p1 = 'P1',
