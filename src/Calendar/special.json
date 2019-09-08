@@ -1,0 +1,25 @@
+{
+  "8/29/19": {
+    "replace": true,
+    "name": "ReCreate Reading",
+    "events": [
+      "p5",
+      "pass10",
+      {
+        "name": "Advisory / ReCreate",
+        "time": 3900
+      },
+      "pass10",
+      "p7",
+      "pass5",
+      [
+        "longLunch",
+        ["lunch40", "clubLeadership"]
+      ],
+      "pass5",
+      "p6",
+      "pass10",
+      "afterSchool"
+    ]
+  }
+}

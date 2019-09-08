@@ -1,5 +1,5 @@
 import Calendar from '../Calendar';
-import { useTime, useWebStorage, getTitle } from '../logic'
+import { useTime, useWebStorage, getTitle } from '../logic';
 const App = () => {
   let [prefs, setPrefs] = useWebStorage('prefs', {
     updateInterval: 30
@@ -8,7 +8,10 @@ const App = () => {
   const title = getTitle(unixTime);
   // secondsSinceMidnight is not meant to take DST into account - current implementation is optimal
   let unixDate = new Date(unixTime);
-  const secondsSinceMidnight = unixDate.getHours() * 3600 + unixDate.getMinutes() * 60 + unixDate.getSeconds();
-  return <Calendar date={unixDate} by='month' />;
+  const secondsSinceMidnight =
+    unixDate.getHours() * 3600 +
+    unixDate.getMinutes() * 60 +
+    unixDate.getSeconds();
+  return <Calendar date={unixDate} by="week" />;
 };
 export default App;
