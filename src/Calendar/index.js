@@ -5,7 +5,7 @@ const getDateArray = (origDate, type = 'week') => {
   const year = origDate.getFullYear();
   const month = origDate.getMonth();
   const origDateMidnight = new Date(year, month, origDate.getDate());
-  if (type === 'day') return origDateMidnight;
+  if (type === 'day') return {dateArray: [origDateMidnight], currentInd: 0};
   let dateArray = [];
   let currentInd = -1;
   if (type === 'month') {
@@ -46,26 +46,29 @@ const getDateArray = (origDate, type = 'week') => {
   }
   return { dateArray, currentInd };
 };
-const WeirdFlex = ({ children, size, direction = null, ...props }) => (
+const WeirdFlex = ({ children, size, direction = null, style, ...props }) => (
   <div
     style={{
       display: 'flex',
-      ...(direction & {flexDirection: direction}),
+      ...(direction && {flexDirection: direction}),
       ...(size && { flex: '' + size }),
+      ...style
     }}
     {...props}
   >
     {children}
   </div>
 );
-const makePeriod = (name, time = 5100, link) => ({
+const makePeriod = (name, time = 5100, link, extra) => ({
   name,
   time,
-  ...(link && { link })
+  ...(link && { link }),
+  ...extra
 });
-const makeExecPeriod = (exec, time) => ({
+const makeExecPeriod = (exec, time, extra) => ({
   exec,
-  ...(time && { time })
+  ...(time && { time }),
+  ...extra
 });
 const recurseReplace = (events, periods) =>
   events.map(el =>
@@ -81,7 +84,7 @@ const execFunctions = {
 const generateJSXDay = (schedule, dayIndex, weekIndex, recursiveLayer = 0) => {
   if (schedule instanceof Array) {
     return (
-      <WeirdFlex direction={recursiveLayer % 2 ? 'row' : 'column'} >
+      <WeirdFlex direction={recursiveLayer % 2 ? 'row' : 'column'} style={recursiveLayer === 0 ? {width: '16vw', borderLeft: '1px solid black', borderRight: '1px solid black'} : {}} >
         {schedule.map((miniSchedule) => generateJSXDay(miniSchedule, dayIndex, weekIndex, recursiveLayer+1))}
       </WeirdFlex>
     );
@@ -95,9 +98,13 @@ const generateJSXDay = (schedule, dayIndex, weekIndex, recursiveLayer = 0) => {
         ...(execFunctions[schedule.exec](dayIndex, weekIndex))
       }
     }
+    let name = schedule.name;
+    if (schedule.isPassing) {
+      name = '';
+    }
     return (
-      <WeirdFlex size={schedule.time}>
-        {schedule.name}
+      <WeirdFlex size={schedule.time} style={{borderTop: '0.5px solid black', borderBottom: '0.5px solid black'}}>
+        {name}
       </WeirdFlex>);
   }
 }
@@ -122,7 +129,6 @@ const generateJSXWeekly = (baseTime, baseDay, standardSchedule, specialSchedule,
       todaySchedule = standardSchedule[standardScheduleKeys[(daysSinceBase+dayIndOffset) % standardScheduleKeys.length]];
       daysSinceBase++;
     }
-    console.log('todaySchedule is ', todaySchedule);
     return generateJSXDay(todaySchedule, daysSinceBase+dayIndOffset, ind);
   })
   return JSXArray;
@@ -161,8 +167,8 @@ const Calendar = ({
     p6: makePeriod(p6),
     p7: makePeriod(p7),
     advisory: makePeriod(advisory, 1800),
-    pass5: makePeriod(passing, 300),
-    pass10: makePeriod(passing, 600),
+    pass5: makePeriod(passing, 300, null, {isPassing: true}),
+    pass10: makePeriod(passing, 600, null, {isPassing: true}),
     getMeeting: getMeetingPeriod,
     afterSchool,
     schoolMeeting,
@@ -244,12 +250,13 @@ const Calendar = ({
       events: recurseReplace(SPECIAL_SCHEDULE[day].events, periods)
     };
   };
-  console.log(dateArray);
-  const JSXArray = by === 'month' ? dateArray.map(arr => generateJSXWeekly(baseRawDate, baseDay, standardSchedule, specialSchedule, arr)) : generateJSXWeekly(baseRawDate, baseDay, standardSchedule, specialSchedule, dateArray)
+  const JSXArray = by === 'month' 
+  ? dateArray.map(arr => generateJSXWeekly(baseRawDate, baseDay, standardSchedule, specialSchedule, arr)) 
+  : generateJSXWeekly(baseRawDate, baseDay, standardSchedule, specialSchedule, dateArray)
   return (
-    <div>
+    <WeirdFlex direction={by === 'month' ? 'column' : 'row'} style={{height: '80vh', width: '90vw', justifyContent: 'space-around', margin: '0 auto'}}>
       {JSXArray}
-    </div>
+    </WeirdFlex>
   );
 };
 export default Calendar;
