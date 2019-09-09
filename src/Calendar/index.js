@@ -122,10 +122,9 @@ const generateJSXDay = (
   schedule,
   dayIndex,
   weekIndex,
-  currentDate,
+  startTime,
   by,
   recursiveLayer = 0,
-  dontIncreaseDate = false
 ) => {
   let content;
   if (schedule instanceof Array) {
@@ -136,21 +135,22 @@ const generateJSXDay = (
         size={size}
         extraClasses={recursiveLayer === 0 ? by+'-outer-layer' : null}
       >
-        {schedule.map(miniSchedule =>
-          generateJSXDay(
+        {schedule.map((miniSchedule, ind) => {
+          const [newSchedule, newStartTime] = generateJSXDay(
             miniSchedule,
             dayIndex,
             weekIndex,
-            currentDate,
+            startTime,
             by,
-            recursiveLayer + 1,
-            recursiveLayer !== 0
-          )
+            recursiveLayer + 1
+          );
+          if (!(recursiveLayer % 2) || ind === schedule.length - 1)
+            startTime = newStartTime;
+          return newSchedule;
+        }
         )}
       </WeirdFlex>
     );
-    if (!dontIncreaseDate)
-      currentDate.setTime(currentDate.getTime() + size * 1000);
   } else if (schedule instanceof Object) {
     if (schedule.header) {
       content = (
@@ -167,18 +167,18 @@ const generateJSXDay = (
           ...execFunctions[schedule.exec](dayIndex, weekIndex)
         };
       }
-      const dateToTimeString = date => {
-        const hours = date.getHours() % 12 || 12;
-        let minutes = date.getMinutes();
+      console.log(startTime);
+      const timeToString = time => {
+        const hours = ((Math.floor(time / 3600) % 12) || 12);
+        let minutes = Math.floor((time % 3600) / 60);
         if (minutes < 10) {
-          minutes = '0' + minutes;
+          minutes = '0'+minutes;
         }
         return hours + ':' + minutes;
-      };
-      const dateCopy = new Date(currentDate);
-      const firstTime = dateToTimeString(dateCopy);
-      dateCopy.setTime(dateCopy.getTime() + schedule.time * 1000);
-      const endTime = dateToTimeString(dateCopy);
+      }
+      const firstTime = timeToString(startTime);
+      startTime += schedule.time;
+      const endTime = timeToString(startTime);
       content = (
         <WeirdFlex
           size={schedule.time}
@@ -190,11 +190,9 @@ const generateJSXDay = (
           <div>{firstTime + ' – ' + endTime}</div>
         </WeirdFlex>
       );
-      if (!dontIncreaseDate)
-        currentDate.setTime(currentDate.getTime() + schedule.time * 1000);
     }
   }
-  return content;
+  return recursiveLayer ? [content, startTime] : content;
 };
 const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 const generateJSXWeekly = (
@@ -274,7 +272,7 @@ const generateJSXWeekly = (
       ],
       daysSinceBase,
       ind,
-      todayDate,
+      dayStart,
       by
     );
   });
