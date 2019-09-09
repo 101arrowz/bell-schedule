@@ -1,21 +1,29 @@
 .period {
   border: 0.8px solid black;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
 }
 .header {
-  border-left: 1.2px solid black;
-  border-right: 1.2px solid black;
+  border: 1.2px solid black;
   border-bottom: 1.8px solid black;
-  border-top: 1.2px solid black;
+  align-items: center;
+  text-align: center;
+  justify-content: space-around;
+  height: 7vh;
+  min-height: 3em;
+}
+.headerText {
+  font-weight: bold;
+  font-size: 1.2em;
 }
 .flex-row {
   display: flex;
   flex-direction: row;
-  width: 100%;
 }
 .flex-column {
   display: flex;
   flex-direction: column;
-  width: 100%;
 }
 .outer-layer {
   width: 16vw;

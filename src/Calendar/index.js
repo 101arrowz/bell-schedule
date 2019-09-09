@@ -50,7 +50,7 @@ const getDateArray = (origDate, type = 'week') => {
 const WeirdFlex = ({ children, size, direction = null, style, extraClasses, ...props }) => (
   <div
     style={{
-      ...(size && {flex: `${size} ${size}`}),
+      flex: size,
       ...style
     }}
     class={[...(direction ? ["flex-"+direction] : []), ...(extraClasses ? (typeof extraClasses === 'string' ? [extraClasses] : extraClasses) : [])].join(' ')}
@@ -78,43 +78,61 @@ const recurseReplace = (events, periods) =>
       ? recurseReplace(el, periods)
       : el
   );
+const MEETINGS = ['Freshman', 'Sophomore', 'Junior', 'Senior'];
 const execFunctions = {
-  getMeeting: dayIndex => ({name: 'Day mod 8 is '+ dayIndex % 8})
+  getMeeting: dayIndex => ({name: MEETINGS[(dayIndex % 8) / 2]+' Mtg.'})
 }
 const getMaxInternalSize = (internals, layer = 1) => internals.map(el => el instanceof Array ? getMaxInternalSize(el) : el.time).reduce((el1, el2) => layer % 2 ? Math.max(el1, el2) : el1+el2)
-const generateJSXDay = (schedule, dayIndex, weekIndex, recursiveLayer = 0) => {
+const generateJSXDay = (schedule, dayIndex, weekIndex, currentDate, recursiveLayer = 0, dontIncreaseDate = false) => {
+  let content;
   if (schedule instanceof Array) {
-    return (
-      <WeirdFlex direction={recursiveLayer % 2 ? 'row' : 'column'} size={getMaxInternalSize(schedule, recursiveLayer)} extraClasses={recursiveLayer === 0 ? 'outer-layer' : null} >
-        {schedule.map((miniSchedule) => generateJSXDay(miniSchedule, dayIndex, weekIndex, recursiveLayer+1))}
+    const size = getMaxInternalSize(schedule, recursiveLayer);
+    content = (
+      <WeirdFlex direction={recursiveLayer % 2 ? 'row' : 'column'} size={size} extraClasses={recursiveLayer === 0 ? 'outer-layer' : null} >
+        {schedule.map((miniSchedule) => generateJSXDay(miniSchedule, dayIndex, weekIndex, currentDate, recursiveLayer+1, recursiveLayer !== 0))}
       </WeirdFlex>
     );
-  }
-  if (schedule instanceof Object) {
+    if (!dontIncreaseDate)
+      currentDate.setTime(currentDate.getTime() + size * 1000);
+  } else if (schedule instanceof Object) {
     if (schedule.header) {
-      return (
-        <WeirdFlex style={{height: '5vh'}} extraClasses='header' >
-          {schedule.header+'\n'+schedule.subheader}
+      content = (
+        <WeirdFlex direction='column' extraClasses='header' >
+          <div class='headerText'>{schedule.header}</div>
+          {schedule.subheader}
         </WeirdFlex>
       );
-    }
-    if (schedule.exec) {
-      if (!execFunctions[schedule.exec])
-        return;
-      schedule = {
-        ...schedule,
-        ...(execFunctions[schedule.exec](dayIndex, weekIndex))
+    } else {
+      if (schedule.exec) {
+        if (!execFunctions[schedule.exec])
+          return null;
+        schedule = {
+          ...schedule,
+          ...(execFunctions[schedule.exec](dayIndex, weekIndex))
+        }
       }
+      const dateToTimeString = (date) => {
+        const hours = date.getHours() % 12 || 12;
+        let minutes = date.getMinutes();
+        if (minutes < 10) {
+          minutes = '0'+minutes;
+        }
+        return hours + ':' + minutes;
+      }
+      const dateCopy = new Date(currentDate);
+      const firstTime = dateToTimeString(dateCopy);
+      dateCopy.setTime(dateCopy.getTime() + schedule.time * 1000);
+      const endTime = dateToTimeString(dateCopy);
+      content = (
+        <WeirdFlex size={schedule.time} direction='column' extraClasses='period' style={schedule.style}>
+          <div>{schedule.name}</div>
+          <div>{firstTime+' – '+endTime}</div>
+        </WeirdFlex>);
+      if (!dontIncreaseDate)
+        currentDate.setTime(currentDate.getTime() + schedule.time * 1000);
     }
-    let name = schedule.name;
-    if (schedule.isPassing) {
-      name = '';
-    }
-    return (
-      <WeirdFlex size={schedule.time} extraClasses='period'>
-        {name}
-      </WeirdFlex>);
   }
+  return content;
 }
 const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 const generateJSXWeekly = (baseTime, baseDay, standardSchedule, specialSchedule, dateArray) => {
@@ -130,9 +148,11 @@ const generateJSXWeekly = (baseTime, baseDay, standardSchedule, specialSchedule,
   const JSXArray = dateArray.map((date, ind) => {
     let todaySchedule;
     let dayName;
+    let dayStart = 28800;
     if (specialSchedule[date]) {
       todaySchedule = specialSchedule[date].events;
       dayName = specialSchedule[date].name;
+      dayStart = specialSchedule[date].startTime || 28800;
       if (specialSchedule[date].replace) {
         daysSinceBase++;
       }
@@ -142,16 +162,18 @@ const generateJSXWeekly = (baseTime, baseDay, standardSchedule, specialSchedule,
       daysSinceBase++;
     };
     const todayDate = new Date(baseTime);
+    todayDate.setDate(todayDate.getDate()+dayIndOffset);
     for (let i = 0; i < daysSinceBase; i++) {
       do {
         todayDate.setDate(todayDate.getDate()+1)
       } while (EXCLUDE_WEEKENDS.includes(todayDate.getDay())) 
     }
+    todayDate.setTime(todayDate.getTime()+dayStart*1000);
     const dayStr = [todayDate.getMonth()+1, todayDate.getDate(), todayDate.getFullYear() % 100].join('/');
     return generateJSXDay([{
       header: WEEKDAYS[ind],
       subheader: dayStr+' ('+dayName+')'
-    }, ...todaySchedule], daysSinceBase+dayIndOffset, ind);
+    }, ...todaySchedule], daysSinceBase, ind, todayDate);
   })
   return JSXArray;
 }
@@ -176,10 +198,13 @@ const Calendar = ({
     p5 = 'P5',
     p6 = 'P6',
     p7 = 'P7',
-    passing = 'Passing Period',
     advisory = 'Advisory'
+  } = {},
+  options: {
+    ignorePassing = null // true for hidden completely, false for not hidden, any other value for blank name 
   } = {}
 }) => {
+  const passStyle = ignorePassing === true ? {display: 'none'} : ignorePassing === false ? {} : {fontSize: 0};
   const periods = {
     p1: makePeriod(p1),
     p2: makePeriod(p2),
@@ -189,8 +214,8 @@ const Calendar = ({
     p6: makePeriod(p6),
     p7: makePeriod(p7),
     advisory: makePeriod(advisory, 1800),
-    pass5: makePeriod(passing, 300, null, {isPassing: true}),
-    pass10: makePeriod(passing, 600, null, {isPassing: true}),
+    pass5: makePeriod('', 300, null, {style: passStyle}),
+    pass10: makePeriod('', 600, null, {style: passStyle}),
     getMeeting: getMeetingPeriod,
     afterSchool,
     schoolMeeting,
@@ -214,6 +239,7 @@ const Calendar = ({
       periods.p1,
       periods.pass10,
       periods.p2,
+      periods.pass10,
       [periods.lunch, [periods.getMeeting, periods.lunch30]],
       periods.pass5,
       periods.p3,
@@ -241,6 +267,7 @@ const Calendar = ({
       periods.p1,
       periods.pass10,
       periods.p4,
+      periods.pass10,
       [periods.lunch, [periods.getMeeting, periods.lunch30]],
       periods.pass5,
       periods.p2,
