@@ -1,5 +1,6 @@
 import SPECIAL_SCHEDULE from './special';
 import RESET_DAYS from './resetDays';
+import './index.css'
 const RESET_DAYS_KEYS = Object.keys(RESET_DAYS);
 const getDateArray = (origDate, type = 'week') => {
   const year = origDate.getFullYear();
@@ -46,14 +47,13 @@ const getDateArray = (origDate, type = 'week') => {
   }
   return { dateArray, currentInd };
 };
-const WeirdFlex = ({ children, size, direction = null, style, ...props }) => (
+const WeirdFlex = ({ children, size, direction = null, style, extraClasses, ...props }) => (
   <div
     style={{
-      display: 'flex',
-      ...(direction && {flexDirection: direction}),
-      ...(size && { flex: '' + size }),
+      ...(size && {flex: `${size} ${size}`}),
       ...style
     }}
+    class={[...(direction ? ["flex-"+direction] : []), ...(extraClasses ? (typeof extraClasses === 'string' ? [extraClasses] : extraClasses) : [])].join(' ')}
     {...props}
   >
     {children}
@@ -81,15 +81,23 @@ const recurseReplace = (events, periods) =>
 const execFunctions = {
   getMeeting: dayIndex => ({name: 'Day mod 8 is '+ dayIndex % 8})
 }
+const getMaxInternalSize = (internals, layer = 1) => internals.map(el => el instanceof Array ? getMaxInternalSize(el) : el.time).reduce((el1, el2) => layer % 2 ? Math.max(el1, el2) : el1+el2)
 const generateJSXDay = (schedule, dayIndex, weekIndex, recursiveLayer = 0) => {
   if (schedule instanceof Array) {
     return (
-      <WeirdFlex direction={recursiveLayer % 2 ? 'row' : 'column'} style={recursiveLayer === 0 ? {width: '16vw', borderLeft: '1px solid black', borderRight: '1px solid black'} : {}} >
+      <WeirdFlex direction={recursiveLayer % 2 ? 'row' : 'column'} size={getMaxInternalSize(schedule, recursiveLayer)} extraClasses={recursiveLayer === 0 ? 'outer-layer' : null} >
         {schedule.map((miniSchedule) => generateJSXDay(miniSchedule, dayIndex, weekIndex, recursiveLayer+1))}
       </WeirdFlex>
     );
   }
   if (schedule instanceof Object) {
+    if (schedule.header) {
+      return (
+        <WeirdFlex style={{height: '5vh'}} extraClasses='header' >
+          {schedule.header+'\n'+schedule.subheader}
+        </WeirdFlex>
+      );
+    }
     if (schedule.exec) {
       if (!execFunctions[schedule.exec])
         return;
@@ -103,11 +111,12 @@ const generateJSXDay = (schedule, dayIndex, weekIndex, recursiveLayer = 0) => {
       name = '';
     }
     return (
-      <WeirdFlex size={schedule.time} style={{borderTop: '0.5px solid black', borderBottom: '0.5px solid black'}}>
+      <WeirdFlex size={schedule.time} extraClasses='period'>
         {name}
       </WeirdFlex>);
   }
 }
+const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 const generateJSXWeekly = (baseTime, baseDay, standardSchedule, specialSchedule, dateArray) => {
   const standardScheduleKeys = Object.keys(standardSchedule).sort();
   let daysSinceBase = baseDay[1]; // Pure number of days counter
@@ -120,16 +129,29 @@ const generateJSXWeekly = (baseTime, baseDay, standardSchedule, specialSchedule,
   }
   const JSXArray = dateArray.map((date, ind) => {
     let todaySchedule;
+    let dayName;
     if (specialSchedule[date]) {
-      todaySchedule = specialSchedule[date];
+      todaySchedule = specialSchedule[date].events;
+      dayName = specialSchedule[date].name;
       if (specialSchedule[date].replace) {
         daysSinceBase++;
       }
     } else {
-      todaySchedule = standardSchedule[standardScheduleKeys[(daysSinceBase+dayIndOffset) % standardScheduleKeys.length]];
+      dayName = standardScheduleKeys[(daysSinceBase+dayIndOffset) % standardScheduleKeys.length];
+      todaySchedule = standardSchedule[dayName];
       daysSinceBase++;
+    };
+    const todayDate = new Date(baseTime);
+    for (let i = 0; i < daysSinceBase; i++) {
+      do {
+        todayDate.setDate(todayDate.getDate()+1)
+      } while (EXCLUDE_WEEKENDS.includes(todayDate.getDay())) 
     }
-    return generateJSXDay(todaySchedule, daysSinceBase+dayIndOffset, ind);
+    const dayStr = [todayDate.getMonth()+1, todayDate.getDate(), todayDate.getFullYear() % 100].join('/');
+    return generateJSXDay([{
+      header: WEEKDAYS[ind],
+      subheader: dayStr+' ('+dayName+')'
+    }, ...todaySchedule], daysSinceBase+dayIndOffset, ind);
   })
   return JSXArray;
 }
@@ -254,7 +276,7 @@ const Calendar = ({
   ? dateArray.map(arr => generateJSXWeekly(baseRawDate, baseDay, standardSchedule, specialSchedule, arr)) 
   : generateJSXWeekly(baseRawDate, baseDay, standardSchedule, specialSchedule, dateArray)
   return (
-    <WeirdFlex direction={by === 'month' ? 'column' : 'row'} style={{height: '80vh', width: '90vw', justifyContent: 'space-around', margin: '0 auto'}}>
+    <WeirdFlex direction={by === 'month' ? 'column' : 'row'} extraClasses='week-outer-layer'>
       {JSXArray}
     </WeirdFlex>
   );

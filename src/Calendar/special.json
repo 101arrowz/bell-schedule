@@ -21,5 +21,13 @@
       "pass10",
       "afterSchool"
     ]
+  },
+  "9/2/19": {
+    "replace": false,
+    "name": "Labor Day",
+    "events": [{
+      "name": "Day Off",
+      "time": 25200
+    }]
   }
 }

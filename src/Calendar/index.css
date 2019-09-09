@@ -1,0 +1,33 @@
+.period {
+  border: 0.8px solid black;
+}
+.header {
+  border-left: 1.2px solid black;
+  border-right: 1.2px solid black;
+  border-bottom: 1.8px solid black;
+  border-top: 1.2px solid black;
+}
+.flex-row {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+}
+.flex-column {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+.outer-layer {
+  width: 16vw;
+  min-width: 120px;
+  max-width: 240px;
+}
+.week-outer-layer {
+  border: 1.2px solid black;
+  width: 80vw;
+  height: 80vh;
+  min-width: 600px;
+  max-width: 1200px;
+  justify-content: center;
+  margin: 0 auto;
+}
