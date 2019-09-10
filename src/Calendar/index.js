@@ -34,9 +34,9 @@ const getDateArray = (origDate, type = 'week') => {
     let dayInd = origDate.getDay();
     if (dayInd === 6) {
       origDate = new Date(origDate);
-      origDate.setDate(origDate.getDate()+1);
+      origDate.setDate(origDate.getDate() + 1);
       dayInd = 0;
-    };
+    }
     let dateNum = origDate.getDate();
     let startDate = new Date(year, month, dateNum - dayInd + 1);
     const initialTime = startDate.getTime();
@@ -48,8 +48,7 @@ const getDateArray = (origDate, type = 'week') => {
     ) {
       const doChecks = !(date - origDateMidnight);
       dateArray.push(type === 'day' && !doChecks ? undefined : date.getTime());
-      if (doChecks)
-        currentInd = dateArray.length - 1;
+      if (doChecks) currentInd = dateArray.length - 1;
     }
     if (type === 'day' && !dateArray.filter(el => !!el).length) {
       dateArray[0] = initialTime;
@@ -67,7 +66,7 @@ const WeirdFlex = ({
 }) => (
   <div
     style={{
-      ...(size && {flex: size}),
+      ...(size && { flex: size }),
       ...style
     }}
     class={[
@@ -112,7 +111,10 @@ const AFTER_SCHOOL = [
 ];
 const execFunctions = {
   getMeeting: dayIndex => ({ name: MEETINGS[(dayIndex % 8) / 2] + ' Mtg.' }),
-  getAfterSchool: (_, weekIndex) => ({ name: AFTER_SCHOOL[weekIndex], ...(weekIndex === 2 ? {timeStyle: {display: 'none'}} : {}) })
+  getAfterSchool: (_, weekIndex) => ({
+    name: AFTER_SCHOOL[weekIndex],
+    ...(weekIndex === 2 ? { timeStyle: { display: 'none' } } : {})
+  })
 };
 const getMaxInternalSize = (internals, layer = 1) =>
   internals
@@ -124,7 +126,9 @@ const generateJSXDay = (
   weekIndex,
   startTime,
   by,
-  recursiveLayer = 0,
+  isActive,
+  currentTime,
+  recursiveLayer = 0
 ) => {
   let content;
   if (schedule instanceof Array) {
@@ -132,8 +136,8 @@ const generateJSXDay = (
     content = (
       <WeirdFlex
         direction={recursiveLayer % 2 ? 'row' : 'column'}
-        size={recursiveLayer ? size: undefined}
-        extraClasses={recursiveLayer === 0 ? by+'-outer-layer' : null}
+        size={recursiveLayer ? size : undefined}
+        extraClasses={recursiveLayer === 0 ? by + '-outer-layer' : null}
       >
         {schedule.map((miniSchedule, ind) => {
           const [newSchedule, newStartTime] = generateJSXDay(
@@ -142,19 +146,27 @@ const generateJSXDay = (
             weekIndex,
             startTime,
             by,
+            isActive,
+            currentTime,
             recursiveLayer + 1
           );
           if (!(recursiveLayer % 2) || ind === schedule.length - 1)
             startTime = newStartTime;
           return newSchedule;
-        }
-        )}
+        })}
       </WeirdFlex>
     );
   } else if (schedule instanceof Object) {
     if (schedule.header) {
       content = (
-        <WeirdFlex direction="column" extraClasses="header" style={schedule.style}>
+        <WeirdFlex
+          direction="column"
+          extraClasses="header"
+          style={{
+            ...schedule.style,
+            ...(isActive && { backgroundColor: 'gray' })
+          }}
+        >
           <div class="headerText">{schedule.header}</div>
           {schedule.subheader}
         </WeirdFlex>
@@ -168,27 +180,44 @@ const generateJSXDay = (
         };
       }
       const timeToString = time => {
-        const hours = ((Math.floor(time / 3600) % 12) || 12);
+        const hours = Math.floor(time / 3600) % 12 || 12;
         let minutes = Math.floor((time % 3600) / 60);
         if (minutes < 10) {
-          minutes = '0'+minutes;
+          minutes = '0' + minutes;
         }
         return hours + ':' + minutes;
-      }
+      };
       const firstTime = timeToString(startTime);
-      startTime += schedule.time;
-      const endTime = timeToString(startTime);
+      const endTime = startTime + schedule.time;
+      const lastTime = timeToString(endTime);
+      let timeBeforeEnd = null;
+      if (isActive && currentTime < endTime && currentTime > startTime)
+        timeBeforeEnd = endTime - currentTime;
       content = (
         <WeirdFlex
           size={schedule.time}
           direction="column"
           extraClasses="period"
-          style={schedule.style}
+          style={{
+            ...schedule.style,
+            ...(timeBeforeEnd && { backgroundColor: 'lightgray' })
+          }}
         >
           <div style={schedule.nameStyle}>{schedule.name}</div>
-          <div style={schedule.timeStyle}>{firstTime + ' - ' + endTime}</div>
+          <div style={schedule.timeStyle}>{firstTime + ' - ' + lastTime}</div>
+          {timeBeforeEnd ? (
+            <div
+              style={{
+                ...schedule.timeStyle,
+                fontSize: '75%'
+              }}
+            >
+              {Math.ceil(timeBeforeEnd / 60)} min. left
+            </div>
+          ) : null}
         </WeirdFlex>
       );
+      startTime = endTime;
     }
   }
   return recursiveLayer ? [content, startTime] : content;
@@ -199,18 +228,40 @@ const generateJSXWeekly = (
   baseDay,
   standardSchedule,
   specialSchedule,
-  dateArray,
-  by
+  dateData,
+  by,
+  currentTime
 ) => {
+  const { dateArray, currentInd } = dateData;
   if (by === 'month')
-    return dateArray.map((arr, ind) => <WeirdFlex direction='row' extraClasses='outer-layer' style={{...(ind === 0 ? {alignSelf: 'flex-end'} : ind === dateArray.length - 1 ? {alignSelf: 'flex-start'} : {alignSelf: 'center'}), height: '75vh'}}>{generateJSXWeekly(
-      baseTime,
-      baseDay,
-      standardSchedule,
-      specialSchedule,
-      arr,
-      'week'
-    )}</WeirdFlex>);
+    return dateArray.map((arr, ind) => (
+      <WeirdFlex
+        direction="row"
+        extraClasses="outer-layer"
+        style={{
+          ...(ind === 0
+            ? { alignSelf: 'flex-end' }
+            : ind === dateArray.length - 1
+            ? { alignSelf: 'flex-start' }
+            : { alignSelf: 'center' }),
+          flex: 1,
+          marginBottom: '5vh'
+        }}
+      >
+        {generateJSXWeekly(
+          baseTime,
+          baseDay,
+          standardSchedule,
+          specialSchedule,
+          {
+            dateArray: arr,
+            currentInd: ind === currentInd[0] ? currentInd[1] : -1
+          },
+          'week',
+          currentTime
+        )}
+      </WeirdFlex>
+    ));
   const standardScheduleKeys = Object.keys(standardSchedule).sort();
   let daysSinceBase = baseDay[1]; // Pure number of days counter
   const dayIndOffset = standardScheduleKeys.indexOf(baseDay[0]) - baseDay[1]; // Add when calculating which day should be used
@@ -270,8 +321,10 @@ const generateJSXWeekly = (
           header: WEEKDAYS[ind],
           subheader: dayStr + ' (' + dayName + ')',
           style: {
-            ...(renderIndex === 0 && {borderLeft: '2px solid black'}),
-            ...(renderIndex === renderedLength - 1 && {borderRight: '2px solid black'})
+            ...(renderIndex === 0 && { borderLeft: '2px solid black' }),
+            ...(renderIndex === renderedLength - 1 && {
+              borderRight: '2px solid black'
+            })
           }
         },
         ...todaySchedule
@@ -279,7 +332,9 @@ const generateJSXWeekly = (
       daysSinceBase,
       ind,
       dayStart,
-      by
+      by,
+      ind === currentInd,
+      currentTime
     );
   });
   return JSXArray;
@@ -289,13 +344,20 @@ const lunch = makePeriod('Lunch', 2700, LUNCH_URL);
 const longLunch = makePeriod('Lunch', 4200, LUNCH_URL);
 const lunch30 = makePeriod('Lunch', 1800, LUNCH_URL);
 const lunch40 = makePeriod('Lunch', 2400, LUNCH_URL);
-const schoolMeeting = makePeriod('School Meeting', 1800, null, {timeStyle: {display: 'none'}});
-const meeting = makeExecPeriod('getMeeting', 900, {timeStyle: {display: 'none'}});
-const afterSchool = makeExecPeriod('getAfterSchool', 1200, {timeStyle: {display: 'block'}});
+const schoolMeeting = makePeriod('School Meeting', 1800);
+const meeting = makeExecPeriod('getMeeting', 900, {
+  timeStyle: { display: 'none' }
+});
+const afterSchool = makeExecPeriod('getAfterSchool', 1200, {
+  timeStyle: { display: 'block' }
+});
 const officeHours3PDay = makePeriod('Office Hours', 1800);
-const clubLeaders = makePeriod('Club Leaders', 1800, null, {timeStyle: {display: 'none'}});
+const clubLeaders = makePeriod('Club Leaders', 1800, null, {
+  timeStyle: { display: 'none' }
+});
 const Calendar = ({
   date,
+  currentTime,
   by = 'week',
   names: {
     p1 = 'P1',
@@ -311,10 +373,9 @@ const Calendar = ({
     ignorePassing = false // true for block not appearing
   } = {}
 }) => {
-  const passProps = 
-    ignorePassing
-      ? {style: { display: 'none' }}
-      : {timeStyle: { display: 'none' }};
+  const passProps = ignorePassing
+    ? { style: { display: 'none' } }
+    : { timeStyle: { display: 'none' } };
   const periods = {
     p1: makePeriod(p1),
     p2: makePeriod(p2),
@@ -343,7 +404,7 @@ const Calendar = ({
       : prevRawDate;
   });
   const baseDay = RESET_DAYS[baseRawDate];
-  let { dateArray, currentInd } = getDateArray(date, by);
+  let dateData = getDateArray(date, by);
   const standardSchedule = {
     A: [
       periods.p1,
@@ -414,14 +475,15 @@ const Calendar = ({
     baseDay,
     standardSchedule,
     specialSchedule,
-    dateArray,
-    by
+    dateData,
+    by,
+    currentTime
   );
   return (
     <WeirdFlex
       direction={by === 'month' ? 'column' : 'row'}
-      extraClasses={by === 'month' ? "month-topmost-layer" : "topmost-layer"}
-      style={by === 'month' ? {height: (JSXArray.length * 80) + 'vh'} : {}}
+      extraClasses={by === 'month' ? 'month-topmost-layer' : 'topmost-layer'}
+      style={by === 'month' ? { height: JSXArray.length * 75 + 'vh' } : {}}
     >
       {JSXArray}
     </WeirdFlex>

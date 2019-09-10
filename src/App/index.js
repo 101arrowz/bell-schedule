@@ -5,7 +5,7 @@ const App = () => {
     updateInterval: 30,
     byInd: 0
   });
-  const byArr = ["day", "week", "month"];
+  const byArr = ['day', 'week', 'month'];
   let unixTime = useTime(prefs.updateInterval * 1000);
   const title = getTitle(unixTime);
   // secondsSinceMidnight is not meant to take DST into account - current implementation is optimal
@@ -16,9 +16,26 @@ const App = () => {
     unixDate.getMinutes() * 60 +
     unixDate.getSeconds();
   return (
-    <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center'}}>
-      <h1 onClick={() => setPrefs({byInd: (prefs.byInd+1) % 3})} style={{fontSize: '5vmin'}}>{title}</h1>
-      <Calendar date={unixDate} by={byArr[prefs.byInd]} />
-    </div>);
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        textAlign: 'center'
+      }}
+    >
+      <h1
+        onClick={() => setPrefs({ byInd: (prefs.byInd + 1) % 3 })}
+        style={{ fontSize: '5vmin' }}
+      >
+        {title}
+      </h1>
+      <Calendar
+        date={unixDate}
+        currentTime={secondsSinceMidnight}
+        by={byArr[prefs.byInd]}
+      />
+    </div>
+  );
 };
 export default App;

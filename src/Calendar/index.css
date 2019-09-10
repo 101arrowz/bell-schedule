@@ -3,7 +3,6 @@
   align-items: center;
   justify-content: center;
   text-align: center;
-  font-size: 1.4vmax;
 }
 .header {
   border: 1px solid black;
@@ -12,11 +11,11 @@
   align-items: center;
   text-align: center;
   justify-content: space-around;
-  font-size: 125%;
+  font-size: 100%;
 }
 .headerText {
   font-weight: bold;
-  font-size: 150%;
+  font-size: 125%;
 }
 .flex-row {
   display: flex;
@@ -30,10 +29,10 @@
   display: inline-flex !important;
   height: 90vh;
   min-height: 60vw;
-  font-size: 1.2vw;
+  font-size: 1.4vmax;
 }
 .month-topmost-layer {
-  justify-content: space-between;
+  justify-content: stretch;
 }
 .week-outer-layer {
   width: 19vw;
