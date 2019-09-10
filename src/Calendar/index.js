@@ -67,7 +67,7 @@ const WeirdFlex = ({
 }) => (
   <div
     style={{
-      flex: size,
+      ...(size && {flex: size}),
       ...style
     }}
     class={[
@@ -112,7 +112,7 @@ const AFTER_SCHOOL = [
 ];
 const execFunctions = {
   getMeeting: dayIndex => ({ name: MEETINGS[(dayIndex % 8) / 2] + ' Mtg.' }),
-  getAfterSchool: (_, weekIndex) => ({ name: AFTER_SCHOOL[weekIndex] })
+  getAfterSchool: (_, weekIndex) => ({ name: AFTER_SCHOOL[weekIndex], ...(weekIndex === 2 ? {timeStyle: {display: 'none'}} : {}) })
 };
 const getMaxInternalSize = (internals, layer = 1) =>
   internals
@@ -132,7 +132,7 @@ const generateJSXDay = (
     content = (
       <WeirdFlex
         direction={recursiveLayer % 2 ? 'row' : 'column'}
-        size={size}
+        size={recursiveLayer ? size: undefined}
         extraClasses={recursiveLayer === 0 ? by+'-outer-layer' : null}
       >
         {schedule.map((miniSchedule, ind) => {
@@ -154,7 +154,7 @@ const generateJSXDay = (
   } else if (schedule instanceof Object) {
     if (schedule.header) {
       content = (
-        <WeirdFlex direction="column" extraClasses="header">
+        <WeirdFlex direction="column" extraClasses="header" style={schedule.style}>
           <div class="headerText">{schedule.header}</div>
           {schedule.subheader}
         </WeirdFlex>
@@ -167,7 +167,6 @@ const generateJSXDay = (
           ...execFunctions[schedule.exec](dayIndex, weekIndex)
         };
       }
-      console.log(startTime);
       const timeToString = time => {
         const hours = ((Math.floor(time / 3600) % 12) || 12);
         let minutes = Math.floor((time % 3600) / 60);
@@ -186,8 +185,8 @@ const generateJSXDay = (
           extraClasses="period"
           style={schedule.style}
         >
-          <div>{schedule.name}</div>
-          <div>{firstTime + ' – ' + endTime}</div>
+          <div style={schedule.nameStyle}>{schedule.name}</div>
+          <div style={schedule.timeStyle}>{firstTime + ' - ' + endTime}</div>
         </WeirdFlex>
       );
     }
@@ -204,7 +203,7 @@ const generateJSXWeekly = (
   by
 ) => {
   if (by === 'month')
-    return dateArray.map((arr, ind) => <WeirdFlex direction='row' extraClasses='outer-layer' style={{...(ind === 0 ? {alignSelf: 'flex-end'} : ind === dateArray.length - 1 ? {alignSelf: 'flex-start'} : {alignSelf: 'center'}), marginBottom: '2em'}}>{generateJSXWeekly(
+    return dateArray.map((arr, ind) => <WeirdFlex direction='row' extraClasses='outer-layer' style={{...(ind === 0 ? {alignSelf: 'flex-end'} : ind === dateArray.length - 1 ? {alignSelf: 'flex-start'} : {alignSelf: 'center'}), marginBottom: '2em', height: '60vh'}}>{generateJSXWeekly(
       baseTime,
       baseDay,
       standardSchedule,
@@ -229,8 +228,11 @@ const generateJSXWeekly = (
     )
       daysSinceBase++;
   }
+  let renderIndex = -1;
+  const renderedLength = dateArray.filter(el => el).length;
   const JSXArray = dateArray.map((date, ind) => {
     if (date === undefined) return;
+    renderIndex++;
     let todaySchedule;
     let dayName;
     let dayStart = 28800;
@@ -266,7 +268,11 @@ const generateJSXWeekly = (
       [
         {
           header: WEEKDAYS[ind],
-          subheader: dayStr + ' (' + dayName + ')'
+          subheader: dayStr + ' (' + dayName + ')',
+          style: {
+            ...(renderIndex === 0 && {borderLeft: '2px solid black'}),
+            ...(renderIndex === renderedLength - 1 && {borderRight: '2px solid black'})
+          }
         },
         ...todaySchedule
       ],
@@ -283,11 +289,11 @@ const lunch = makePeriod('Lunch', 2700, LUNCH_URL);
 const longLunch = makePeriod('Lunch', 4200, LUNCH_URL);
 const lunch30 = makePeriod('Lunch', 1800, LUNCH_URL);
 const lunch40 = makePeriod('Lunch', 2400, LUNCH_URL);
-const schoolMeeting = makePeriod('School Meeting', 1800);
-const getMeetingPeriod = makeExecPeriod('getMeeting', 900);
-const afterSchool = makeExecPeriod('getAfterSchool', 1200);
+const schoolMeeting = makePeriod('School Meeting', 1800, null, {timeStyle: {display: 'none'}});
+const meeting = makeExecPeriod('getMeeting', 900, {timeStyle: {display: 'none'}});
+const afterSchool = makeExecPeriod('getAfterSchool', 1200, {timeStyle: {display: 'block'}});
 const officeHours3PDay = makePeriod('Office Hours', 1800);
-const clubLeadership = makePeriod('Club Leadership', 1800);
+const clubLeaders = makePeriod('Club Leaders', 1800, null, {timeStyle: {display: 'none'}});
 const Calendar = ({
   date,
   by = 'week',
@@ -302,15 +308,13 @@ const Calendar = ({
     advisory = 'Advisory'
   } = {},
   options: {
-    ignorePassing = null // true for hidden completely, false for not hidden, any other value for blank name
+    ignorePassing = false // true for block not appearing
   } = {}
 }) => {
-  const passStyle =
-    ignorePassing === true
-      ? { display: 'none' }
-      : ignorePassing === false
-      ? {}
-      : { fontSize: 0 };
+  const passProps = 
+    ignorePassing
+      ? {style: { display: 'none' }}
+      : {timeStyle: { display: 'none' }};
   const periods = {
     p1: makePeriod(p1),
     p2: makePeriod(p2),
@@ -320,9 +324,9 @@ const Calendar = ({
     p6: makePeriod(p6),
     p7: makePeriod(p7),
     advisory: makePeriod(advisory, 1800),
-    pass5: makePeriod('', 300, null, { style: passStyle }),
-    pass10: makePeriod('', 600, null, { style: passStyle }),
-    getMeeting: getMeetingPeriod,
+    pass5: makePeriod('', 300, null, passProps),
+    pass10: makePeriod('', 600, null, passProps),
+    meeting,
     afterSchool,
     schoolMeeting,
     lunch,
@@ -330,7 +334,7 @@ const Calendar = ({
     lunch30,
     lunch40,
     officeHours3PDay,
-    clubLeadership
+    clubLeaders
   };
   const baseRawDate = RESET_DAYS_KEYS.reduce((prevRawDate, thisRawDate) => {
     const thisDate = new Date(thisRawDate);
@@ -346,7 +350,7 @@ const Calendar = ({
       periods.pass10,
       periods.p2,
       periods.pass10,
-      [periods.lunch, [periods.getMeeting, periods.lunch30]],
+      [periods.lunch, [periods.meeting, periods.lunch30]],
       periods.pass5,
       periods.p3,
       periods.pass10,
@@ -374,7 +378,7 @@ const Calendar = ({
       periods.pass10,
       periods.p4,
       periods.pass10,
-      [periods.lunch, [periods.getMeeting, periods.lunch30]],
+      [periods.lunch, [periods.meeting, periods.lunch30]],
       periods.pass5,
       periods.p2,
       periods.pass10,
@@ -391,7 +395,7 @@ const Calendar = ({
       periods.pass10,
       periods.p7,
       periods.pass5,
-      [periods.longLunch, [periods.lunch40, periods.clubLeadership]],
+      [periods.longLunch, [periods.lunch40, periods.clubLeaders]],
       periods.pass5,
       periods.p6,
       periods.pass10,

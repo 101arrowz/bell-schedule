@@ -16,8 +16,8 @@ const App = () => {
     unixDate.getMinutes() * 60 +
     unixDate.getSeconds();
   return (
-    <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
-      <h1 onClick={() => setPrefs({byInd: (prefs.byInd+1) % 3})} >{title}</h1>
+    <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center'}}>
+      <h1 onClick={() => setPrefs({byInd: (prefs.byInd+1) % 3})} style={{fontSize: '5vmin'}}>{title}</h1>
       <Calendar date={unixDate} by={byArr[prefs.byInd]} />
     </div>);
 };
