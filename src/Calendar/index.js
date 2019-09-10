@@ -203,7 +203,7 @@ const generateJSXWeekly = (
   by
 ) => {
   if (by === 'month')
-    return dateArray.map((arr, ind) => <WeirdFlex direction='row' extraClasses='outer-layer' style={{...(ind === 0 ? {alignSelf: 'flex-end'} : ind === dateArray.length - 1 ? {alignSelf: 'flex-start'} : {alignSelf: 'center'}), marginBottom: '2em', height: '60vh'}}>{generateJSXWeekly(
+    return dateArray.map((arr, ind) => <WeirdFlex direction='row' extraClasses='outer-layer' style={{...(ind === 0 ? {alignSelf: 'flex-end'} : ind === dateArray.length - 1 ? {alignSelf: 'flex-start'} : {alignSelf: 'center'}), height: '75vh'}}>{generateJSXWeekly(
       baseTime,
       baseDay,
       standardSchedule,
@@ -421,6 +421,7 @@ const Calendar = ({
     <WeirdFlex
       direction={by === 'month' ? 'column' : 'row'}
       extraClasses={by === 'month' ? "month-topmost-layer" : "topmost-layer"}
+      style={by === 'month' ? {height: (JSXArray.length * 80) + 'vh'} : {}}
     >
       {JSXArray}
     </WeirdFlex>

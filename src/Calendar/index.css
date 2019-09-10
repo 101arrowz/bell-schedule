@@ -32,12 +32,12 @@
   min-height: 60vw;
   font-size: 1.2vw;
 }
+.month-topmost-layer {
+  justify-content: space-between;
+}
 .week-outer-layer {
   width: 19vw;
 }
 .day-outer-layer {
   width: 50vw;
-}
-@media only screen and (min-width: 768px) {
-
 }
