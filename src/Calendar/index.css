@@ -28,7 +28,7 @@
 .month-topmost-layer, .topmost-layer {
   display: inline-flex !important;
   height: 90vh;
-  min-height: 60vw;
+  min-height: 50vw;
   font-size: 1.4vmax;
 }
 .month-topmost-layer {

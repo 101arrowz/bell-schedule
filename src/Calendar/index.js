@@ -208,7 +208,6 @@ const generateJSXDay = (
           {timeBeforeEnd ? (
             <div
               style={{
-                ...schedule.timeStyle,
                 fontSize: '75%'
               }}
             >

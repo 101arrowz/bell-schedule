@@ -1,15 +1,36 @@
 import Calendar from '../Calendar';
+import { useEffect } from 'preact/hooks';
 import { useTime, useWebStorage, getTitle } from '../logic';
 const App = () => {
   let [prefs, setPrefs] = useWebStorage('prefs', {
     updateInterval: 30,
-    byInd: 0
+    by: 'week'
   });
-  const byArr = ['day', 'week', 'month'];
-  let unixTime = useTime(prefs.updateInterval * 1000);
+  let [unixTime, updateTime] = useTime(prefs.updateInterval * 1000);
+  useEffect(() => {
+    const keyDownHandler = e => {
+      if ((e.keyCode === 82 && (e.metaKey || e.ctrlKey)) || e.keyCode === 116) {
+        e.preventDefault();
+        updateTime();
+      }
+      if (e.keyCode === 77)
+        setPrefs({
+          by: 'month'
+        });
+      if (e.keyCode === 68)
+        setPrefs({
+          by: 'day'
+        });
+      if (e.keyCode === 87)
+        setPrefs({
+          by: 'week'
+        })
+    };
+    document.addEventListener('keydown', keyDownHandler);
+    return () => document.removeEventListener('keydown', keyDownHandler);
+  });
   const title = getTitle(unixTime);
   // secondsSinceMidnight is not meant to take DST into account - current implementation is optimal
-  // TODO: current period highlighting - pass secondsSinceMidnight to Calendar
   let unixDate = new Date(unixTime);
   const secondsSinceMidnight =
     unixDate.getHours() * 3600 +
@@ -25,15 +46,14 @@ const App = () => {
       }}
     >
       <h1
-        onClick={() => setPrefs({ byInd: (prefs.byInd + 1) % 3 })}
-        style={{ fontSize: '5vmin' }}
+        style={{ fontSize: '3vmin' }}
       >
         {title}
       </h1>
       <Calendar
         date={unixDate}
         currentTime={secondsSinceMidnight}
-        by={byArr[prefs.byInd]}
+        by={prefs.by}
       />
     </div>
   );

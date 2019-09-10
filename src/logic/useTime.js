@@ -5,5 +5,5 @@ export default (interval, asDateObject = false) => {
     const id = setTimeout(() => update(!updateVal), interval);
     return () => clearTimeout(id);
   });
-  return asDateObject ? new Date() : Date.now();
+  return [asDateObject ? new Date() : Date.now(), () => update(!updateVal)];
 };
