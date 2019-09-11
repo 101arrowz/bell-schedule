@@ -2,16 +2,33 @@ import SPECIAL_SCHEDULE from './special';
 import RESET_DAYS from './resetDays';
 import './index.css';
 const RESET_DAYS_KEYS = Object.keys(RESET_DAYS);
-const getDateArray = (origDate, dateOffset, type = 'week') => {
+const getDateArray = (
+  origDate,
+  dateOffset,
+  type = 'week',
+  validateOnly = false
+) => {
   origDate = new Date(origDate);
   let dateArray = [];
   let currentInd = -1;
+  let baseRawDate;
+  let valid;
+  const generateBaseRawDate = date =>
+    RESET_DAYS_KEYS.reduce((prevRawDate, thisRawDate) => {
+      const thisDate = new Date(thisRawDate);
+      return thisDate >= new Date(prevRawDate) && startDate <= date
+        ? thisRawDate
+        : prevRawDate;
+    });
   if (type === 'month') {
-    origDate.setMonth(origDate.getMonth()+dateOffset);
+    origDate.setMonth(origDate.getMonth() + dateOffset);
     const year = origDate.getFullYear();
     const month = origDate.getMonth();
     const origDateMidnight = new Date(year, month, origDate.getDate());
     let startDate = new Date(year, month);
+    baseRawDate = generateBaseRawDate(startDate);
+    valid = startDate - new Date(baseRawDate) > 0;
+    if (validateOnly) return valid;
     let endDate = new Date(year, month + 1, 0);
     let tmpArr = [];
     const EXCLUDE_WEEKENDS = [0, 6];
@@ -34,22 +51,18 @@ const getDateArray = (origDate, dateOffset, type = 'week') => {
     }
   } else {
     if (type !== 'day' || !dateOffset) {
-      if (type !== 'day')
-        origDate.setDate(origDate.getDate()+ (7*dateOffset));
-      if (origDate.getDay() === 6)
-        origDate.setDate(origDate.getDate()+1);
+      if (type !== 'day') origDate.setDate(origDate.getDate() + 7 * dateOffset);
+      if (origDate.getDay() === 6) origDate.setDate(origDate.getDate() + 1);
     } else {
       if (dateOffset < 0) {
         for (let i = dateOffset; i < 0; i++) {
-          origDate.setDate(origDate.getDate()-1);
-          if (origDate.getDay() === 0)
-            origDate.setDate(origDate.getDate()-2);
+          origDate.setDate(origDate.getDate() - 1);
+          if (origDate.getDay() === 0) origDate.setDate(origDate.getDate() - 2);
         }
       } else {
         for (let i = 0; i < dateOffset; i++) {
-          origDate.setDate(origDate.getDate()+1);
-          if (origDate.getDay() === 6)
-            origDate.setDate(origDate.getDate()+2);
+          origDate.setDate(origDate.getDate() + 1);
+          if (origDate.getDay() === 6) origDate.setDate(origDate.getDate() + 2);
         }
       }
     }
@@ -59,6 +72,9 @@ const getDateArray = (origDate, dateOffset, type = 'week') => {
     const month = origDate.getMonth();
     const origDateMidnight = new Date(year, month, origDate.getDate());
     let startDate = new Date(year, month, dateNum - dayInd + 1);
+    baseRawDate = generateBaseRawDate(startDate);
+    valid = startDate - new Date(baseRawDate) > 0;
+    if (validateOnly) return valid;
     const initialTime = startDate.getTime();
     let endDate = new Date(year, month, dateNum - dayInd + 5);
     for (
@@ -74,7 +90,7 @@ const getDateArray = (origDate, dateOffset, type = 'week') => {
       dateArray[0] = initialTime;
     }
   }
-  return { dateArray, currentInd };
+  return { dateArray, currentInd, baseRawDate, rejectRequest: !valid };
 };
 const WeirdFlex = ({
   children,
@@ -151,7 +167,6 @@ const generateJSXDay = (
 ) => {
   let content;
   if (schedule instanceof Array) {
-    console.log(schedule)
     const size = getMaxInternalSize(schedule, recursiveLayer);
     content = (
       <WeirdFlex
@@ -321,13 +336,7 @@ const generateJSXWeekly = (
       todaySchedule = standardSchedule[dayName];
       daysSinceBase++;
     }
-    const todayDate = new Date(baseTime);
-    todayDate.setDate(todayDate.getDate() + dayIndOffset);
-    for (let i = 0; i < daysSinceBase; i++) {
-      do {
-        todayDate.setDate(todayDate.getDate() + 1);
-      } while (EXCLUDE_WEEKENDS.includes(todayDate.getDay()));
-    }
+    const todayDate = new Date(date);
     todayDate.setTime(todayDate.getTime() + dayStart * 1000);
     const dayStr = [
       todayDate.getMonth() + 1,
@@ -368,25 +377,27 @@ const meeting = makeExecPeriod('getMeeting', 900);
 const afterSchool = makeExecPeriod('getAfterSchool', 1200);
 const officeHours3PDay = makePeriod('Office Hours', 1800);
 const clubLeaders = makePeriod('Club Leaders', 1800);
-const Calendar = ({
-  date,
-  currentTime,
-  dateOffset = 0,
-  by = 'week',
-  names: {
-    p1 = 'P1',
-    p2 = 'P2',
-    p3 = 'P3',
-    p4 = 'P4',
-    p5 = 'P5',
-    p6 = 'P6',
-    p7 = 'P7',
-    advisory = 'Advisory'
-  } = {},
-  options: {
-    ignorePassing = false // true for block not appearing
-  } = {}
-}) => {
+const Calendar = props => {
+  let {
+    date,
+    currentTime,
+    onRejected,
+    dateOffset = 0,
+    by = 'week',
+    names: {
+      p1 = 'P1',
+      p2 = 'P2',
+      p3 = 'P3',
+      p4 = 'P4',
+      p5 = 'P5',
+      p6 = 'P6',
+      p7 = 'P7',
+      advisory = 'Advisory'
+    } = {},
+    options: {
+      ignorePassing = false // true for block not appearing
+    } = {}
+  } = props;
   const passProps = ignorePassing
     ? { style: { display: 'none' } }
     : { timeStyle: { display: 'none' } };
@@ -411,7 +422,15 @@ const Calendar = ({
     officeHours3PDay,
     clubLeaders
   };
-  let {baseRawDate, ...dateData} = getDateArray(date, dateOffset, by);
+  let { baseRawDate, rejectRequest, ...dateData } = getDateArray(
+    date,
+    dateOffset,
+    by
+  );
+  if (rejectRequest) {
+    if (typeof onRejected === 'function') onRejected();
+    return null;
+  }
   const baseDay = RESET_DAYS[baseRawDate];
   const standardSchedule = {
     A: [
@@ -497,4 +516,7 @@ const Calendar = ({
     </WeirdFlex>
   );
 };
+const validateOffset = (date, dateOffset, by) =>
+  getDateArray(date, dateOffset, by, true);
 export default Calendar;
+export { validateOffset };
