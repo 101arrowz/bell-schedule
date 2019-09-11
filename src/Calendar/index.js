@@ -2,13 +2,15 @@ import SPECIAL_SCHEDULE from './special';
 import RESET_DAYS from './resetDays';
 import './index.css';
 const RESET_DAYS_KEYS = Object.keys(RESET_DAYS);
-const getDateArray = (origDate, type = 'week') => {
-  const year = origDate.getFullYear();
-  const month = origDate.getMonth();
-  const origDateMidnight = new Date(year, month, origDate.getDate());
+const getDateArray = (origDate, dateOffset, type = 'week') => {
+  origDate = new Date(origDate);
   let dateArray = [];
   let currentInd = -1;
   if (type === 'month') {
+    origDate.setMonth(origDate.getMonth()+dateOffset);
+    const year = origDate.getFullYear();
+    const month = origDate.getMonth();
+    const origDateMidnight = new Date(year, month, origDate.getDate());
     let startDate = new Date(year, month);
     let endDate = new Date(year, month + 1, 0);
     let tmpArr = [];
@@ -21,7 +23,7 @@ const getDateArray = (origDate, type = 'week') => {
     while (date <= endDate) {
       while (tmpArr.length < 5) {
         if (date > endDate) break;
-        if (date - origDateMidnight === 0)
+        if (!dateOffset && date - origDateMidnight === 0)
           currentInd = [dateArray.length, tmpArr.length]; // Haven't added current tmpArr or current date yet, so dateArray.length and tmpArr.length without subtracting
         tmpArr.push(date.getTime());
         incrementDate();
@@ -31,13 +33,31 @@ const getDateArray = (origDate, type = 'week') => {
       tmpArr = [];
     }
   } else {
-    let dayInd = origDate.getDay();
-    if (dayInd === 6) {
-      origDate = new Date(origDate);
-      origDate.setDate(origDate.getDate() + 1);
-      dayInd = 0;
+    if (type !== 'day' || !dateOffset) {
+      if (type !== 'day')
+        origDate.setDate(origDate.getDate()+ (7*dateOffset));
+      if (origDate.getDay() === 6)
+        origDate.setDate(origDate.getDate()+1);
+    } else {
+      if (dateOffset < 0) {
+        for (let i = dateOffset; i < 0; i++) {
+          origDate.setDate(origDate.getDate()-1);
+          if (origDate.getDay() === 0)
+            origDate.setDate(origDate.getDate()-2);
+        }
+      } else {
+        for (let i = 0; i < dateOffset; i++) {
+          origDate.setDate(origDate.getDate()+1);
+          if (origDate.getDay() === 6)
+            origDate.setDate(origDate.getDate()+2);
+        }
+      }
     }
+    let dayInd = origDate.getDay();
     let dateNum = origDate.getDate();
+    const year = origDate.getFullYear();
+    const month = origDate.getMonth();
+    const origDateMidnight = new Date(year, month, origDate.getDate());
     let startDate = new Date(year, month, dateNum - dayInd + 1);
     const initialTime = startDate.getTime();
     let endDate = new Date(year, month, dateNum - dayInd + 5);
@@ -48,7 +68,7 @@ const getDateArray = (origDate, type = 'week') => {
     ) {
       const doChecks = !(date - origDateMidnight);
       dateArray.push(type === 'day' && !doChecks ? undefined : date.getTime());
-      if (doChecks) currentInd = dateArray.length - 1;
+      if (!dateOffset && doChecks) currentInd = dateArray.length - 1;
     }
     if (type === 'day' && !dateArray.filter(el => !!el).length) {
       dateArray[0] = initialTime;
@@ -131,6 +151,7 @@ const generateJSXDay = (
 ) => {
   let content;
   if (schedule instanceof Array) {
+    console.log(schedule)
     const size = getMaxInternalSize(schedule, recursiveLayer);
     content = (
       <WeirdFlex
@@ -350,6 +371,7 @@ const clubLeaders = makePeriod('Club Leaders', 1800);
 const Calendar = ({
   date,
   currentTime,
+  dateOffset = 0,
   by = 'week',
   names: {
     p1 = 'P1',
@@ -389,14 +411,8 @@ const Calendar = ({
     officeHours3PDay,
     clubLeaders
   };
-  const baseRawDate = RESET_DAYS_KEYS.reduce((prevRawDate, thisRawDate) => {
-    const thisDate = new Date(thisRawDate);
-    return thisDate >= new Date(prevRawDate) && thisDate <= date
-      ? thisRawDate
-      : prevRawDate;
-  });
+  let {baseRawDate, ...dateData} = getDateArray(date, dateOffset, by);
   const baseDay = RESET_DAYS[baseRawDate];
-  let dateData = getDateArray(date, by);
   const standardSchedule = {
     A: [
       periods.p1,

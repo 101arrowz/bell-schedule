@@ -1,4 +1,4 @@
-/* const CACHE_VER = 'v1';
+const CACHE_VER = 'v1';
 const openCache = () => caches.open(CACHE_VER);
 const matchWithCache = (val, fallback = null, anyVersion = false) => 
   (anyVersion ? Promise.resolve(caches) : openCache()).then(cache => cache.match(val)).then(val => val === undefined ? (typeof fallback === 'function' ? fallback() : fallback) : val)
@@ -13,5 +13,4 @@ self.addEventListener('fetch', e => e.respondWith(
     cache.put(e.request.clone(), res.clone());
     return res;
   })))
-)); */
-// Uncomment when live - SW annoying for dev
+));

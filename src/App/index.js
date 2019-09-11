@@ -1,12 +1,19 @@
 import Calendar from '../Calendar';
-import { useEffect } from 'preact/hooks';
+import { useEffect, useState } from 'preact/hooks';
 import { useTime, useWebStorage, getTitle } from '../logic';
 const App = () => {
   let [prefs, setPrefs] = useWebStorage('prefs', {
     updateInterval: 30,
     by: 'week'
   });
+  let [dateOffset, setDateOffset] = useState(0);
   let [unixTime, updateTime] = useTime(prefs.updateInterval * 1000);
+  const updateFormatTo = by => {
+    setPrefs({
+      by
+    });
+    setDateOffset(0);
+  }
   useEffect(() => {
     const keyDownHandler = e => {
       if ((e.keyCode === 82 && (e.metaKey || e.ctrlKey)) || e.keyCode === 116) {
@@ -14,17 +21,17 @@ const App = () => {
         updateTime();
       }
       if (e.keyCode === 77)
-        setPrefs({
-          by: 'month'
-        });
+        updateFormatTo('month');
       if (e.keyCode === 68)
-        setPrefs({
-          by: 'day'
-        });
+        updateFormatTo('day');
       if (e.keyCode === 87)
-        setPrefs({
-          by: 'week'
-        })
+        updateFormatTo('week');
+      if (e.keyCode === 37) {
+        setDateOffset(dateOffset-1); 
+      }
+      if (e.keyCode === 39) {
+        setDateOffset(dateOffset+1); 
+      }
     };
     document.addEventListener('keydown', keyDownHandler);
     return () => document.removeEventListener('keydown', keyDownHandler);
@@ -54,6 +61,7 @@ const App = () => {
         date={unixDate}
         currentTime={secondsSinceMidnight}
         by={prefs.by}
+        dateOffset={dateOffset}
       />
     </div>
   );
