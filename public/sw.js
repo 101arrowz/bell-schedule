@@ -4,7 +4,7 @@ const matchWithCache = (val, fallback = null, anyVersion = false) =>
   (anyVersion ? Promise.resolve(caches) : openCache()).then(cache => cache.match(val)).then(val => val === undefined ? (typeof fallback === 'function' ? fallback() : fallback) : val)
 self.addEventListener('install', e => e.waitUntil(
   openCache()
-    .then(cache => fetch('/pwa-manifest.json', {cache: 'no-store'})
+    .then(cache => fetch('./pwa-manifest.json', {cache: 'no-store'})
       .then(res => res.json())
       .then(manifest => manifest.filter(el => el !== '/sw.js' && ['js', 'css', 'html', 'webmanifest'].includes(el.split('.').pop())).map(el => el === '/index.html' ? '/' : el))
       .then(newManifest => cache.addAll(newManifest)))));
