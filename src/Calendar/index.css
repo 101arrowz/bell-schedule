@@ -29,7 +29,7 @@
   display: inline-flex !important;
   height: 90vh;
   min-height: 50vw;
-  font-size: 1.4vmax;
+  font-size: 2.5vmin;
 }
 .month-topmost-layer {
   justify-content: stretch;

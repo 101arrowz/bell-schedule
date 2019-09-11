@@ -66,7 +66,7 @@ const WeirdFlex = ({
 }) => (
   <div
     style={{
-      ...(size && { flex: size }),
+      ...(size && { flex: `${size} 1 auto` }),
       ...style
     }}
     class={[
@@ -112,8 +112,7 @@ const AFTER_SCHOOL = [
 const execFunctions = {
   getMeeting: dayIndex => ({ name: MEETINGS[(dayIndex % 8) / 2] + ' Mtg.' }),
   getAfterSchool: (_, weekIndex) => ({
-    name: AFTER_SCHOOL[weekIndex],
-    ...(weekIndex === 2 ? { timeStyle: { display: 'none' } } : {})
+    name: AFTER_SCHOOL[weekIndex]
   })
 };
 const getMaxInternalSize = (internals, layer = 1) =>
@@ -344,16 +343,10 @@ const longLunch = makePeriod('Lunch', 4200, LUNCH_URL);
 const lunch30 = makePeriod('Lunch', 1800, LUNCH_URL);
 const lunch40 = makePeriod('Lunch', 2400, LUNCH_URL);
 const schoolMeeting = makePeriod('School Meeting', 1800);
-const meeting = makeExecPeriod('getMeeting', 900, {
-  timeStyle: { display: 'none' }
-});
-const afterSchool = makeExecPeriod('getAfterSchool', 1200, {
-  timeStyle: { display: 'block' }
-});
+const meeting = makeExecPeriod('getMeeting', 900);
+const afterSchool = makeExecPeriod('getAfterSchool', 1200);
 const officeHours3PDay = makePeriod('Office Hours', 1800);
-const clubLeaders = makePeriod('Club Leaders', 1800, null, {
-  timeStyle: { display: 'none' }
-});
+const clubLeaders = makePeriod('Club Leaders', 1800);
 const Calendar = ({
   date,
   currentTime,
