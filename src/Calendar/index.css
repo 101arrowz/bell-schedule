@@ -40,3 +40,8 @@
 .day-outer-layer {
   width: 50vw;
 }
+.arrows {
+  cursor: pointer;
+  font-size: 5.4vmin;
+  margin-bottom: 1.2vmin;
+}

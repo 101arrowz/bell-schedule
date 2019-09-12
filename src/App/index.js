@@ -54,8 +54,10 @@ const App = () => {
     touchMoveX = getTouchX(e)
   }
   const handleTouchEnd = () => {
-    if (touchStartX !== touchMoveX)
-      setDateOffset(dateOffset + (touchStartX < touchMoveX ? -1 : 1))
+    if (touchStartX < touchMoveX && leftArrowValid)
+      setDateOffset(dateOffset - 1);
+    if (touchStartX > touchMoveX)
+      setDateOffset(dateOffset + 1);
     touchStartX = 0; // Prevent duplicate events when releasing one finger at a time
     touchMoveX = 0;
     }
@@ -75,9 +77,11 @@ const App = () => {
         justifyContent: 'space-between',
         alignItems: 'center',
       }}>
-        {/* <span class="arrows">‹</span> */}
+        <span class="arrows" onclick={() => setDateOffset(dateOffset - 1)} style={{
+          visibility: leftArrowValid ? 'visible' : 'hidden'
+        }} >‹</span>
         <h1 style={{ fontSize: '3vmin', paddingLeft: '1.5em', paddingRight: '1.5em' }}>{title}</h1>
-        {/* <span class="arrows">›</span> */}
+        <span class="arrows" onclick={() => setDateOffset(dateOffset + 1)}>›</span>
       </div>
       <Calendar
         date={unixDate}
