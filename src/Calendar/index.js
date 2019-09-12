@@ -396,7 +396,8 @@ const Calendar = props => {
     } = {},
     options: {
       ignorePassing = false // true for block not appearing
-    } = {}
+    } = {},
+    ...extraProps
   } = props;
   const passProps = ignorePassing
     ? { style: { display: 'none' } }
@@ -511,6 +512,7 @@ const Calendar = props => {
       direction={by === 'month' ? 'column' : 'row'}
       extraClasses={by === 'month' ? 'month-topmost-layer' : 'topmost-layer'}
       style={by === 'month' ? { height: JSXArray.length * 75 + 'vh' } : {}}
+      {...extraProps}
     >
       {JSXArray}
     </WeirdFlex>

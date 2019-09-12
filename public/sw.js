@@ -6,7 +6,7 @@ self.addEventListener('install', e => e.waitUntil(
   openCache()
     .then(cache => fetch('./pwa-manifest.json', {cache: 'no-store'})
       .then(res => res.json())
-      .then(manifest => manifest.filter(el => el !== '/sw.js' && ['js', 'css', 'html', 'webmanifest'].includes(el.split('.').pop())).map(el => el === '/index.html' ? '/' : el))
+      .then(manifest => manifest.filter(el => el !== '/sw.js' && ['js', 'css', 'html', 'webmanifest'].includes(el.split('.').pop())).map(el => el === '/index.html' ? './' : el))
       .then(newManifest => cache.addAll(newManifest)))));
 self.addEventListener('fetch', e => e.respondWith(
   matchWithCache(e.request, () => fetch(e.request.clone(), {cache: 'no-store'}).then(res => openCache().then(cache => {

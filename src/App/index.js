@@ -1,6 +1,8 @@
 import Calendar, { validateOffset } from '../Calendar';
 import { useEffect, useState } from 'preact/hooks';
 import { useTime, useWebStorage, getTitle } from '../logic';
+let touchStartX = 0;
+let touchMoveX = 0;
 const App = () => {
   let [prefs, setPrefs] = useWebStorage('prefs', {
     updateInterval: 30,
@@ -42,22 +44,50 @@ const App = () => {
     document.addEventListener('keydown', keyDownHandler);
     return () => document.removeEventListener('keydown', keyDownHandler);
   });
+  const getTouchX = e => ([...e.touches].map(el => el.clientX).reduce((el1, el2) => el1+el2)) / e.touches.length;
+  const handleTouchStart = e => {
+    touchStartX = getTouchX(e);
+    touchMoveX = touchStartX;
+  }
+  const handleTouchMove = e => {
+    e.preventDefault();
+    touchMoveX = getTouchX(e)
+  }
+  const handleTouchEnd = () => {
+    if (touchStartX !== touchMoveX)
+      setDateOffset(dateOffset + (touchStartX < touchMoveX ? -1 : 1))
+    touchStartX = 0; // Prevent duplicate events when releasing one finger at a time
+    touchMoveX = 0;
+    }
   return (
     <div
       style={{
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        textAlign: 'center'
+        textAlign: 'center',
+        fontFamily: '"Segoe UI", "Arial", sans-serif'
       }}
     >
-      <h1 style={{ fontSize: '3vmin' }}>{title}</h1>
+      <div style={{
+        display: 'flex',
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+      }}>
+        {/* <span class="arrows">‹</span> */}
+        <h1 style={{ fontSize: '3vmin', paddingLeft: '1.5em', paddingRight: '1.5em' }}>{title}</h1>
+        {/* <span class="arrows">›</span> */}
+      </div>
       <Calendar
         date={unixDate}
         currentTime={secondsSinceMidnight}
         by={prefs.by}
         dateOffset={dateOffset}
         onRejected={() => setDateOffset(dateOffset + 1)}
+        ontouchstart={handleTouchStart}
+        ontouchmove={handleTouchMove}
+        ontouchend={handleTouchEnd}
       />
     </div>
   );
