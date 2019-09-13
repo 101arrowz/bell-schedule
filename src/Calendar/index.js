@@ -236,8 +236,18 @@ const generateJSXDay = (
       const endTime = startTime + schedule.time;
       const lastTime = timeToString(endTime);
       let timeBeforeEnd = null;
-      if (isActive && currentTime < endTime && currentTime > startTime)
+      let withTextBG;
+      let lineIndicatorPos;
+      if (isActive && currentTime < endTime && currentTime > startTime) {
         timeBeforeEnd = endTime - currentTime;
+        withTextBG = {
+          zIndex: 2,
+          paddingLeft: '3%',
+          paddingRight: '3%',
+          ...(schedule.style && schedule.style.backgroundColor ? {backgroundColor: schedule.style.backgroundColor} : {backgroundColor: 'white'})
+        };
+        lineIndicatorPos = (100-(timeBeforeEnd*100/schedule.time))+'%';
+      }
       content = (
         <WeirdFlex
           size={schedule.time}
@@ -245,20 +255,24 @@ const generateJSXDay = (
           extraClasses="period"
           style={{
             ...schedule.style,
-            ...(timeBeforeEnd && { backgroundColor: 'lightgray', fontWeight: '500' })
+            ...(timeBeforeEnd && { color: '#2196f3', fontWeight: 'bold' })
           }}
         >
-          <div style={schedule.nameStyle}>{schedule.name}</div>
-          <div style={schedule.timeStyle}>{firstTime + ' - ' + lastTime}</div>
-          {timeBeforeEnd ? (
+          <div style={{...schedule.nameStyle, ...withTextBG}}>{schedule.name}</div>
+          <div style={{...schedule.timeStyle, ...withTextBG}}>{firstTime + ' - ' + lastTime}</div>
+          {timeBeforeEnd ? [
             <div
               style={{
-                fontSize: '75%'
+                fontSize: '75%',
+                ...withTextBG
               }}
             >
               {Math.ceil(timeBeforeEnd / 60)} min. left
-            </div>
-          ) : null}
+            </div>,
+            <div class="triangle-indicator-left" style={{top: lineIndicatorPos, left: 0}}></div>,
+            <div class="line-indicator" style={{top: lineIndicatorPos}}></div>,
+            <div class="triangle-indicator-right" style={{top: lineIndicatorPos, right: 0}}></div>
+          ] : null}
         </WeirdFlex>
       );
       startTime = endTime;
@@ -406,7 +420,7 @@ const Calendar = props => {
   const passProps = ignorePassing
     ? { style: { display: 'none' } }
     : { timeStyle: { display: 'none' } };
-  const makeStandardPeriod = (period) => makePeriod(period.name, 5100, null, {style: {backgroundColor: period.color || 'inherit', color: period.textColor || 'inherit'}})
+  const makeStandardPeriod = (period, time = 5100, link = null) => makePeriod(period.name, time, link, {style: {backgroundColor: period.color || 'inherit', color: period.textColor || 'inherit'}})
   const periods = {
     p1: makeStandardPeriod(p1),
     p2: makeStandardPeriod(p2),
@@ -415,7 +429,7 @@ const Calendar = props => {
     p5: makeStandardPeriod(p5),
     p6: makeStandardPeriod(p6),
     p7: makeStandardPeriod(p7),
-    advisory: makeStandardPeriod(advisory),
+    advisory: makeStandardPeriod(advisory, 1800),
     pass5: makePeriod('', 300, null, passProps),
     pass10: makePeriod('', 600, null, passProps),
     meeting,

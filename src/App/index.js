@@ -84,21 +84,21 @@ const App = () => {
     document.addEventListener('keydown', keyDownHandler);
     return () => document.removeEventListener('keydown', keyDownHandler);
   });
-  const getTouchCoords = e => ([...e.touches].map(el => [el.clientX, el.clientY]).reduce((el1, el2) => [el1[0]+el2[0], el1[1]+el2[1]])).map(el => el / e.touches.length);
+  const getTouchCoords = e => e.touches.length > 1 ? null : [e.touches[0].clientX, e.touches[0].clientY];
   const handleTouchStart = e => {
     touchStartCoords = getTouchCoords(e);
     touchEndCoords = touchStartCoords;
   }
   const handleTouchMove = e => {
     const newTouchCoords = getTouchCoords(e);
-    const diff = newTouchCoords.map((el, i) => el - touchEndCoords[i]);
-    if (diff[0] > diff[1])
+    const diff = newTouchCoords && touchEndCoords && newTouchCoords.map((el, i) => el - touchEndCoords[i]);
+    if (e.cancelable && diff && diff[0] > diff[1])
       e.preventDefault();
     touchEndCoords = newTouchCoords;
   }
   const handleTouchEnd = () => {
-    const diff = touchEndCoords.map((el, i) => el - touchStartCoords[i]);
-    if (Math.abs(diff[0]) < Math.abs(diff[1]))
+    const diff = touchEndCoords && touchStartCoords && touchEndCoords.map((el, i) => el - touchStartCoords[i]);
+    if (!diff || Math.abs(diff[0]) < Math.abs(diff[1]))
       return;
     if (diff[0] > 0 && leftArrowValid)
       setDateOffset(dateOffset - 1);
@@ -124,12 +124,14 @@ const App = () => {
         justifyContent: 'space-between',
         alignItems: 'center',
         width: '95%',
-        height: '10%'
+        minHeight: '10%'
       }}>
         <span class="arrows" onclick={() => setDateOffset(dateOffset - 1)} style={{
           visibility: leftArrowValid ? 'visible' : 'hidden'
         }} >‹</span>
-        <h1 style={{ fontSize: '3vmin' }}>{title}</h1>
+        <div style={{
+          textAlign: 'center'
+        }}><div style={{ fontSize: '4vmin' }}>Harker Bell Schedule</div><p style={{fontSize: '2.5vmin'}}>{title}</p></div>
         <span class="arrows" onclick={() => setDateOffset(dateOffset + 1)}>›</span>
       </div>
       <Calendar
