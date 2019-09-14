@@ -1,6 +1,10 @@
 import SPECIAL_SCHEDULE from './special';
 import RESET_DAYS from './resetDays';
 import './index.css';
+const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+const SHORT_WEEKDAYS = WEEKDAYS.map(el => el.slice(0, 3));
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const SHORT_MONTH_NAMES = MONTH_NAMES.map(el => el.slice(0, 3))
 const RESET_DAYS_KEYS = Object.keys(RESET_DAYS);
 const getDateArray = (
   origDate,
@@ -193,17 +197,23 @@ const generateJSXDay = (
     );
   } else if (schedule instanceof Object) {
     if (schedule.header) {
+      const date = schedule.date.getDate();
+      const month = schedule.date.getMonth();
+      const isFirstDayMonth = (date === 1 || (date <= 3 && schedule.date.getDay() === 1));
+      const isFirstDayYear = isFirstDayMonth && !month;
       content = (
         <WeirdFlex
-          direction="column"
+          direction="row"
           extraClasses="header"
           style={{
             ...schedule.style,
-            ...(isActive && { backgroundColor: 'gray' })
           }}
         >
-          <div class="headerText">{schedule.header}</div>
-          {schedule.subheader}
+          <WeirdFlex direction="column" extraClasses="header-left">
+            <div class="header-day">{SHORT_WEEKDAYS[schedule.date.getDay()-1]}</div>
+            <div class="header-date">{(isFirstDayMonth ? SHORT_MONTH_NAMES[schedule.date.getMonth()] + ' ' : '') + date + (isFirstDayYear ? ', '+schedule.date.getFullYear() : '')}</div>
+          </WeirdFlex>
+          <div class="header-right">{schedule.shortDayName}</div>
         </WeirdFlex>
       );
     } else {
@@ -235,7 +245,7 @@ const generateJSXDay = (
           extraClasses="period"
           style={{
             ...schedule.style,
-            ...(timeBeforeEnd && { backgroundColor: 'lightgray' })
+            ...(timeBeforeEnd && { backgroundColor: 'lightgray', fontWeight: '500' })
           }}
         >
           <div style={schedule.nameStyle}>{schedule.name}</div>
@@ -256,7 +266,6 @@ const generateJSXDay = (
   }
   return recursiveLayer ? [content, startTime] : content;
 };
-const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 const generateJSXWeekly = (
   baseTime,
   baseDay,
@@ -271,7 +280,7 @@ const generateJSXWeekly = (
     return dateArray.map((arr, ind) => (
       <WeirdFlex
         direction="row"
-        extraClasses="outer-layer"
+        extraClasses="topmost-layer"
         style={{
           ...(ind === 0
             ? { alignSelf: 'flex-end' }
@@ -279,7 +288,8 @@ const generateJSXWeekly = (
             ? { alignSelf: 'flex-start' }
             : { alignSelf: 'center' }),
           flex: 1,
-          marginBottom: '5vh'
+          marginBottom: '5vh',
+          minHeight: '80vh'
         }}
       >
         {generateJSXWeekly(
@@ -313,47 +323,43 @@ const generateJSXWeekly = (
     )
       daysSinceBase++;
   }
-  let renderIndex = -1;
-  const renderedLength = dateArray.filter(el => el).length;
+  // Following previously used for styling
+  // let renderIndex = -1; 
+  // const renderedLength = dateArray.filter(el => el).length;
   const JSXArray = dateArray.map((date, ind) => {
     if (date === undefined) return;
-    renderIndex++;
     let todaySchedule;
     let dayName;
+    let shortDayName = "";
     let dayStart = 28800;
     if (specialSchedule[date]) {
-      todaySchedule = specialSchedule[date].events;
-      dayName = specialSchedule[date].name;
-      dayStart = specialSchedule[date].startTime || 28800;
-      if (specialSchedule[date].replace) {
+      const sc = specialSchedule[date];
+      todaySchedule = sc.events;
+      dayName = sc.name;
+      dayStart = sc.startTime || 28800;
+      if (sc.replace) {
         daysSinceBase++;
+        shortDayName = standardScheduleKeys[
+          (daysSinceBase + dayIndOffset) % standardScheduleKeys.length
+        ];
       }
     } else {
       dayName =
         standardScheduleKeys[
           (daysSinceBase + dayIndOffset) % standardScheduleKeys.length
         ];
+      shortDayName = dayName;
       todaySchedule = standardSchedule[dayName];
       daysSinceBase++;
     }
     const todayDate = new Date(date);
-    todayDate.setTime(todayDate.getTime() + dayStart * 1000);
-    const dayStr = [
-      todayDate.getMonth() + 1,
-      todayDate.getDate(),
-      todayDate.getFullYear() % 100
-    ].join('/');
     return generateJSXDay(
       [
         {
-          header: WEEKDAYS[ind],
-          subheader: dayStr + ' (' + dayName + ')',
-          style: {
-            ...(renderIndex === 0 && { borderLeft: '2px solid black' }),
-            ...(renderIndex === renderedLength - 1 && {
-              borderRight: '2px solid black'
-            })
-          }
+          header: true,
+          date: todayDate,
+          shortDayName,
+          dayName
         },
         ...todaySchedule
       ],
@@ -384,33 +390,32 @@ const Calendar = props => {
     onRejected,
     dateOffset = 0,
     by = 'week',
-    names: {
-      p1 = 'P1',
-      p2 = 'P2',
-      p3 = 'P3',
-      p4 = 'P4',
-      p5 = 'P5',
-      p6 = 'P6',
-      p7 = 'P7',
-      advisory = 'Advisory'
+    periodData: {
+      p1,
+      p2,
+      p3,
+      p4,
+      p5,
+      p6,
+      p7,
+      advisory
     } = {},
-    options: {
-      ignorePassing = false // true for block not appearing
-    } = {},
+    ignorePassing = false,
     ...extraProps
   } = props;
   const passProps = ignorePassing
     ? { style: { display: 'none' } }
     : { timeStyle: { display: 'none' } };
+  const makeStandardPeriod = (period) => makePeriod(period.name, 5100, null, {style: {backgroundColor: period.color || 'inherit', color: period.textColor || 'inherit'}})
   const periods = {
-    p1: makePeriod(p1),
-    p2: makePeriod(p2),
-    p3: makePeriod(p3),
-    p4: makePeriod(p4),
-    p5: makePeriod(p5),
-    p6: makePeriod(p6),
-    p7: makePeriod(p7),
-    advisory: makePeriod(advisory, 1800),
+    p1: makeStandardPeriod(p1),
+    p2: makeStandardPeriod(p2),
+    p3: makeStandardPeriod(p3),
+    p4: makeStandardPeriod(p4),
+    p5: makeStandardPeriod(p5),
+    p6: makeStandardPeriod(p6),
+    p7: makeStandardPeriod(p7),
+    advisory: makeStandardPeriod(advisory),
     pass5: makePeriod('', 300, null, passProps),
     pass10: makePeriod('', 600, null, passProps),
     meeting,
@@ -511,7 +516,6 @@ const Calendar = props => {
     <WeirdFlex
       direction={by === 'month' ? 'column' : 'row'}
       extraClasses={by === 'month' ? 'month-topmost-layer' : 'topmost-layer'}
-      style={by === 'month' ? { height: JSXArray.length * 75 + 'vh' } : {}}
       {...extraProps}
     >
       {JSXArray}

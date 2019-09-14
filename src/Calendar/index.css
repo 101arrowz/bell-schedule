@@ -1,21 +1,37 @@
 .period {
-  border: 0.8px solid black;
+  border: 1px solid #9aa0a6;
+  color: rgba(0,0,0,.87);
   align-items: center;
   justify-content: center;
   text-align: center;
+  position: relative;
 }
 .header {
-  border: 1px solid black;
-  border-top: 2px solid black;
-  border-bottom: 1.2px solid black;
-  align-items: center;
-  text-align: center;
-  justify-content: space-around;
+  border: 1px solid #9aa0a6;
+  justify-content: space-between;
   font-size: 100%;
+  align-items: center;
 }
-.headerText {
+.header-left {
+  justify-content: space-around;
+  text-align: center;
+  margin-left: 4%;
+}
+.header-right {
+  font-size: 200%;
+  margin-right: 4%;
   font-weight: bold;
-  font-size: 125%;
+  color: rgba(0,0,0,.38);
+}
+.header-day {
+  font-size: 72%;
+  text-transform: uppercase;
+  color: rgba(0,0,0,.87);
+}
+.header-date {
+  font-size: 135%;
+  font-weight: bold;
+  color: rgba(0,0,0,.54);
 }
 .flex-row {
   display: flex;
@@ -27,12 +43,15 @@
 }
 .month-topmost-layer, .topmost-layer {
   display: inline-flex !important;
-  height: 90vh;
-  min-height: 50vw;
+  flex: 1 1 auto;
   font-size: 2.5vmin;
 }
 .month-topmost-layer {
-  justify-content: stretch;
+  justify-content: space-between;
+}
+.topmost-layer {
+  border: 1px solid #9aa0a6;
+  border-radius: 2px;
 }
 .week-outer-layer {
   width: 19vw;
@@ -42,6 +61,13 @@
 }
 .arrows {
   cursor: pointer;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  user-select: none;
   font-size: 5.4vmin;
   margin-bottom: 1.2vmin;
+  width: 1.8vmin;
+}
+.arrows:hover {
+  font-weight: bold
 }
