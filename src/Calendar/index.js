@@ -337,9 +337,6 @@ const generateJSXWeekly = (
     )
       daysSinceBase++;
   }
-  // Following previously used for styling
-  // let renderIndex = -1; 
-  // const renderedLength = dateArray.filter(el => el).length;
   const JSXArray = dateArray.map((date, ind) => {
     if (date === undefined) return;
     let todaySchedule;

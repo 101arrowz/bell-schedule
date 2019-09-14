@@ -92,7 +92,7 @@ const App = () => {
   const handleTouchMove = e => {
     const newTouchCoords = getTouchCoords(e);
     const diff = newTouchCoords && touchEndCoords && newTouchCoords.map((el, i) => el - touchEndCoords[i]);
-    if (e.cancelable && diff && diff[0] > diff[1])
+    if (e.cancelable && diff && Math.abs(diff[0]) > Math.abs(diff[1]))
       e.preventDefault();
     touchEndCoords = newTouchCoords;
   }
