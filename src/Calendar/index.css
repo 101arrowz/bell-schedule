@@ -83,15 +83,23 @@
 .day-outer-layer {
   width: 50vw;
 }
-.arrows {
+.arrow-container {
+  height: 6vmin;
+  width: 6vmin;
+  font-size: 6vmin;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.text-button {
   cursor: pointer;
   -webkit-user-select: none;
   -moz-user-select: none;
   user-select: none;
-  font-size: 5.4vmin;
-  margin-bottom: 1.2vmin;
-  width: 1.8vmin;
 }
-.arrows:hover {
+.arrow-container:hover {
   font-weight: bold
+}
+.arrow {
+  margin-bottom: 1.2vmin;
 }

@@ -126,13 +126,24 @@ const App = () => {
         width: '95%',
         minHeight: '10%'
       }}>
-        <span class="arrows" onclick={() => setDateOffset(dateOffset - 1)} style={{
+        <div class="arrow-container text-button" onclick={() => setDateOffset(dateOffset - 1)} style={{
           visibility: leftArrowValid ? 'visible' : 'hidden'
-        }} >‹</span>
+        }}>
+          <span class="arrow">‹</span>
+        </div>
+        {/* <div class="text-button">D</div>
+        <div class="text-button">W</div> */}
         <div style={{
           textAlign: 'center'
-        }}><div style={{ fontSize: '4vmin' }}>Harker Bell Schedule</div><p style={{fontSize: '2.5vmin'}}>{title}</p></div>
-        <span class="arrows" onclick={() => setDateOffset(dateOffset + 1)}>›</span>
+        }}>
+          <div style={{ fontSize: '4vmin' }}>Harker Bell Schedule</div>
+          <p style={{fontSize: '2.5vmin'}}>{title}</p>
+        </div>
+        {/* <div class="text-button">M</div>
+        <div class="text-button">⚙</div> */}
+        <div class="arrow-container text-button" onclick={() => setDateOffset(dateOffset + 1)}>
+          <span class="arrow">›</span>
+        </div>
       </div>
       <Calendar
         date={unixDate}

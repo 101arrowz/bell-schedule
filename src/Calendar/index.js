@@ -236,16 +236,9 @@ const generateJSXDay = (
       const endTime = startTime + schedule.time;
       const lastTime = timeToString(endTime);
       let timeBeforeEnd = null;
-      let withTextBG;
       let lineIndicatorPos;
       if (isActive && currentTime < endTime && currentTime > startTime) {
         timeBeforeEnd = endTime - currentTime;
-        withTextBG = {
-          zIndex: 2,
-          paddingLeft: '3%',
-          paddingRight: '3%',
-          ...(schedule.style && schedule.style.backgroundColor ? {backgroundColor: schedule.style.backgroundColor} : {backgroundColor: 'white'})
-        };
         lineIndicatorPos = (100-(timeBeforeEnd*100/schedule.time))+'%';
       }
       content = (
@@ -258,13 +251,12 @@ const generateJSXDay = (
             ...(timeBeforeEnd && { color: '#2196f3', fontWeight: 'bold' })
           }}
         >
-          <div style={{...schedule.nameStyle, ...withTextBG}}>{schedule.name}</div>
-          <div style={{...schedule.timeStyle, ...withTextBG}}>{firstTime + ' - ' + lastTime}</div>
+          <div style={schedule.nameStyle}>{schedule.name}</div>
+          <div style={schedule.timeStyle}>{firstTime + ' - ' + lastTime}</div>
           {timeBeforeEnd ? [
             <div
               style={{
                 fontSize: '75%',
-                ...withTextBG
               }}
             >
               {Math.ceil(timeBeforeEnd / 60)} min. left
