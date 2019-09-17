@@ -6,36 +6,35 @@ const SHORT_WEEKDAYS = WEEKDAYS.map(el => el.slice(0, 3));
 const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const SHORT_MONTH_NAMES = MONTH_NAMES.map(el => el.slice(0, 3))
 const RESET_DAYS_KEYS = Object.keys(RESET_DAYS);
+const generateBaseRawDate = date =>
+  RESET_DAYS_KEYS.reduce((prevRawDate, thisRawDate) => {
+    const thisDate = new Date(thisRawDate);
+    return thisDate >= new Date(prevRawDate) && startDate <= date
+      ? thisRawDate
+      : prevRawDate;
+  });
 const getDateArray = (
   origDate,
-  dateOffset,
+  origRenderDate,
   type = 'week',
-  validateOnly = false
 ) => {
+  const renderDate = new Date(origRenderDate);
   origDate = new Date(origDate);
   let dateArray = [];
   let currentInd = -1;
   let baseRawDate;
-  let valid;
-  const generateBaseRawDate = date =>
-    RESET_DAYS_KEYS.reduce((prevRawDate, thisRawDate) => {
-      const thisDate = new Date(thisRawDate);
-      return thisDate >= new Date(prevRawDate) && startDate <= date
-        ? thisRawDate
-        : prevRawDate;
-    });
+  const origDateMidnight = new Date(origDate.getFullYear(), origDate.getMonth(), origDate.getDate());
+  const year = renderDate.getFullYear();
+  const month = renderDate.getMonth();
+  const EXCLUDE_WEEKENDS = [0, 6];
   if (type === 'month') {
-    origDate.setMonth(origDate.getMonth() + dateOffset);
-    const year = origDate.getFullYear();
-    const month = origDate.getMonth();
-    const origDateMidnight = new Date(year, month, origDate.getDate());
     let startDate = new Date(year, month);
     baseRawDate = generateBaseRawDate(startDate);
-    valid = startDate - new Date(baseRawDate) > 0;
-    if (validateOnly) return valid;
+    const valid = startDate - new Date(baseRawDate) >= 0;
+    if (!valid)
+      return {rejectRequest: true}
     let endDate = new Date(year, month + 1, 0);
     let tmpArr = [];
-    const EXCLUDE_WEEKENDS = [0, 6];
     while (EXCLUDE_WEEKENDS.includes(startDate.getDay()))
       startDate.setDate(startDate.getDate() + 1);
     tmpArr[startDate.getDay() - 1] = startDate.getTime();
@@ -44,7 +43,7 @@ const getDateArray = (
     while (date <= endDate) {
       while (tmpArr.length < 5) {
         if (date > endDate) break;
-        if (!dateOffset && date - origDateMidnight === 0)
+        if (date - origDateMidnight === 0)
           currentInd = [dateArray.length, tmpArr.length]; // Haven't added current tmpArr or current date yet, so dateArray.length and tmpArr.length without subtracting
         tmpArr.push(date.getTime());
         incrementDate();
@@ -54,31 +53,30 @@ const getDateArray = (
       tmpArr = [];
     }
   } else {
-    if (type !== 'day' || !dateOffset) {
-      if (type !== 'day') origDate.setDate(origDate.getDate() + 7 * dateOffset);
-      if (origDate.getDay() === 6) origDate.setDate(origDate.getDate() + 1);
-    } else {
-      if (dateOffset < 0) {
-        for (let i = dateOffset; i < 0; i++) {
-          origDate.setDate(origDate.getDate() - 1);
-          if (origDate.getDay() === 0) origDate.setDate(origDate.getDate() - 2);
-        }
-      } else {
-        for (let i = 0; i < dateOffset; i++) {
-          origDate.setDate(origDate.getDate() + 1);
-          if (origDate.getDay() === 6) origDate.setDate(origDate.getDate() + 2);
-        }
-      }
-    }
-    let dayInd = origDate.getDay();
-    let dateNum = origDate.getDate();
-    const year = origDate.getFullYear();
-    const month = origDate.getMonth();
-    const origDateMidnight = new Date(year, month, origDate.getDate());
+    // if (type !== 'day' || !dateOffset) {
+    //   if (type !== 'day') origDate.setDate(origDate.getDate() + 7 * dateOffset);
+    //   if (origDate.getDay() === 6) origDate.setDate(origDate.getDate() + 1);
+    // } else {
+    //   if (dateOffset < 0) {
+    //     for (let i = dateOffset; i < 0; i++) {
+    //       origDate.setDate(origDate.getDate() - 1);
+    //       if (origDate.getDay() === 0) origDate.setDate(origDate.getDate() - 2);
+    //     }
+    //   } else {
+    //     for (let i = 0; i < dateOffset; i++) {
+    //       origDate.setDate(origDate.getDate() + 1);
+    //       if (origDate.getDay() === 6) origDate.setDate(origDate.getDate() + 2);
+    //     }
+    //   }
+    // }
+    let dayInd = renderDate.getDay();
+    let dateNum = renderDate.getDate();
+    const renderDateMidnight = new Date(year, month, dateNum);
     let startDate = new Date(year, month, dateNum - dayInd + 1);
     baseRawDate = generateBaseRawDate(startDate);
-    valid = startDate - new Date(baseRawDate) > 0;
-    if (validateOnly) return valid;
+    const valid = startDate - new Date(baseRawDate) >= 0;
+    if (!valid)
+      return {rejectRequest: true}
     const initialTime = startDate.getTime();
     let endDate = new Date(year, month, dateNum - dayInd + 5);
     for (
@@ -86,15 +84,14 @@ const getDateArray = (
       date <= endDate;
       date.setDate(date.getDate() + 1)
     ) {
-      const doChecks = !(date - origDateMidnight);
-      dateArray.push(type === 'day' && !doChecks ? undefined : date.getTime());
-      if (!dateOffset && doChecks) currentInd = dateArray.length - 1;
+      dateArray.push(type === 'day' && date - renderDateMidnight ? undefined : date.getTime());
+      if (!(date - origDateMidnight)) currentInd = dateArray.length - 1;
     }
     if (type === 'day' && !dateArray.filter(el => !!el).length) {
       dateArray[0] = initialTime;
     }
   }
-  return { dateArray, currentInd, baseRawDate, rejectRequest: !valid };
+  return { dateArray, currentInd, baseRawDate };
 };
 const WeirdFlex = ({
   children,
@@ -204,7 +201,7 @@ const generateJSXDay = (
       content = (
         <WeirdFlex
           direction="row"
-          extraClasses="header"
+          extraClasses={"header"+(isActive ? " active" : "")}
           style={{
             ...schedule.style,
           }}
@@ -335,16 +332,18 @@ const generateJSXWeekly = (
     let dayName;
     let shortDayName = "";
     let dayStart = 28800;
+    let special = false;
     if (specialSchedule[date]) {
+      special = true;
       const sc = specialSchedule[date];
       todaySchedule = sc.events;
       dayName = sc.name;
       dayStart = sc.startTime || 28800;
       if (sc.replace) {
-        daysSinceBase++;
         shortDayName = standardScheduleKeys[
           (daysSinceBase + dayIndOffset) % standardScheduleKeys.length
         ];
+        daysSinceBase++;
       }
     } else {
       dayName =
@@ -360,6 +359,7 @@ const generateJSXWeekly = (
       [
         {
           header: true,
+          special,
           date: todayDate,
           shortDayName,
           dayName
@@ -391,7 +391,7 @@ const Calendar = props => {
     date,
     currentTime,
     onRejected,
-    dateOffset = 0,
+    renderDate = date,
     by = 'week',
     periodData: {
       p1,
@@ -433,7 +433,7 @@ const Calendar = props => {
   };
   let { baseRawDate, rejectRequest, ...dateData } = getDateArray(
     date,
-    dateOffset,
+    renderDate,
     by
   );
   if (rejectRequest) {
@@ -525,7 +525,43 @@ const Calendar = props => {
     </WeirdFlex>
   );
 };
-const validateOffset = (date, dateOffset, by) =>
-  getDateArray(date, dateOffset, by, true);
+const validateDate = (renderDate, by) => {
+  const baseDate = new Date(generateBaseRawDate(renderDate));
+  if (by === 'month') {
+    return renderDate.getFullYear() > baseDate.getFullYear() || renderDate.getMonth() > baseDate.getMonth() || (renderDate.getMonth() === baseDate.getMonth() && baseDate.getDate() === 1);
+  } else if (by === 'day') {
+    return renderDate.getFullYear() > baseDate.getFullYear() || renderDate.getMonth() > baseDate.getMonth() || renderDate.getDate() >= baseDate.getDate();
+  }
+  return renderDate.getFullYear() > baseDate.getFullYear() || renderDate.getMonth() > baseDate.getMonth() || renderDate.getDate() > baseDate.getDate() || (renderDate.getDate() === baseDate.getDate() && renderDate.getDay() <= 1);
+}
+const modifyDate = (origDate, by, diff) => {
+  const date = new Date(origDate);
+  if (by === 'month') {
+    date.setMonth(date.getMonth() + diff, 1);
+
+  } else if (by === 'day') {
+    if (diff < 0) {
+      for (let i = diff; i < 0; i++) {
+        date.setDate(date.getDate() - 1);
+        if (date.getDay() === 0) date.setDate(date.getDate() - 2);
+      }
+    } else {
+      for (let i = 0; i < diff; i++) {
+        date.setDate(date.getDate() + 1);
+        if (date.getDay() === 6) date.setDate(date.getDate() + 2);
+      }
+    }
+  } else {
+    date.setDate(date.getDate() + 7*diff);
+    if (date.getDay() === 6) {
+      date.setDate(date.getDate()+1);
+    }
+    date.setDate(date.getDate() - date.getDay() + 1);
+  }
+  while ([0, 6].includes(date.getDay())) {
+    date.setDate(date.getDate()+1);
+  }
+  return date;
+}
 export default Calendar;
-export { validateOffset };
+export { validateDate, modifyDate };

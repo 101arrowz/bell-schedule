@@ -1,4 +1,4 @@
-import Calendar, { validateOffset } from '../Calendar';
+import Calendar, { validateDate, modifyDate } from '../Calendar';
 import { useEffect, useState } from 'preact/hooks';
 import { useTime, useWebStorage, getTitle } from '../logic';
 let touchStartCoords = null;
@@ -48,23 +48,26 @@ const App = () => {
       }
     }
   });
-  let [dateOffset, setDateOffset] = useState(0);
   let [unixTime, updateTime] = useTime(prefs.updateInterval * 1000);
   const title = getTitle(unixTime);
   // secondsSinceMidnight is not meant to take DST into account - current implementation is optimal
   let unixDate = new Date(unixTime);
+  let [renderDate, setRenderDate] = useState(unixDate);
   const secondsSinceMidnight =
     unixDate.getHours() * 3600 +
     unixDate.getMinutes() * 60 +
     unixDate.getSeconds();
-
   const updateFormatTo = by => {
-    setPrefs({
-      by
-    });
-    setDateOffset(0);
-  };
-  let leftArrowValid = validateOffset(unixDate, dateOffset - 1, prefs.by);
+    if (by === prefs.by) {
+      setRenderDate(unixDate);
+    } else {
+      setPrefs({
+        by
+      });
+    }
+  }
+  const changeRenderDate = diff => setRenderDate(modifyDate(renderDate, prefs.by, diff));
+  let leftArrowValid = validateDate(modifyDate(renderDate, prefs.by, -1), prefs.by);
   useEffect(() => {
     const keyDownHandler = e => {
       if ((e.keyCode === 82 && (e.metaKey || e.ctrlKey)) || e.keyCode === 116) {
@@ -75,10 +78,10 @@ const App = () => {
       if (e.keyCode === 68) updateFormatTo('day');
       if (e.keyCode === 87) updateFormatTo('week');
       if (e.keyCode === 37 && leftArrowValid) {
-        setDateOffset(dateOffset - 1);
+        changeRenderDate(-1);
       }
       if (e.keyCode === 39) {
-        setDateOffset(dateOffset + 1);
+        changeRenderDate(1);
       }
     };
     document.addEventListener('keydown', keyDownHandler);
@@ -101,9 +104,9 @@ const App = () => {
     if (!diff || Math.abs(diff[0]) < Math.abs(diff[1]))
       return;
     if (diff[0] > 0 && leftArrowValid)
-      setDateOffset(dateOffset - 1);
+      changeRenderDate(-1);
     if (diff[0] < 0)
-      setDateOffset(dateOffset + 1);
+      changeRenderDate(1);
     touchStartCoords = [0, 0]; // Prevent duplicate events when releasing one finger at a time
     touchEndCoords = [0, 0];
     }
@@ -124,24 +127,23 @@ const App = () => {
         justifyContent: 'space-between',
         alignItems: 'center',
         width: '95%',
-        minHeight: '10%'
       }}>
-        <div class="arrow-container text-button" onclick={() => setDateOffset(dateOffset - 1)} style={{
+        <div class="text-button arrow-container" onclick={() => changeRenderDate(-1)} style={{
           visibility: leftArrowValid ? 'visible' : 'hidden'
         }}>
           <span class="arrow">‹</span>
         </div>
-        {/* <div class="text-button">D</div>
-        <div class="text-button">W</div> */}
+        <div class={"text-button" + (prefs.by === 'day' ? " active" : "")} onclick={() => updateFormatTo('day')}><span>D</span></div>
+        <div class={"text-button" + (prefs.by === 'week' ? " active" : "")} onclick={() => updateFormatTo('week')}><span>W</span></div>
         <div style={{
           textAlign: 'center'
         }}>
-          <div style={{ fontSize: '4vmin' }}>Harker Bell Schedule</div>
-          <p style={{fontSize: '2.5vmin'}}>{title}</p>
+          <div style={{ fontSize: '3vmin' }}>Harker Bell Schedule</div>
+          <p style={{fontSize: '2vmin'}}>{title}</p>
         </div>
-        {/* <div class="text-button">M</div>
-        <div class="text-button">⚙</div> */}
-        <div class="arrow-container text-button" onclick={() => setDateOffset(dateOffset + 1)}>
+        <div class={"text-button" + (prefs.by === 'month' ? " active" : "")} onclick={() => updateFormatTo('month')}><span>M</span></div>
+        <div class="text-button"><span>⚙</span></div>
+        <div class="text-button arrow-container " onclick={() => changeRenderDate(1)}>
           <span class="arrow">›</span>
         </div>
       </div>
@@ -150,8 +152,8 @@ const App = () => {
         currentTime={secondsSinceMidnight}
         by={prefs.by}
         periodData={prefs.periodData}
-        dateOffset={dateOffset}
-        onRejected={() => setDateOffset(dateOffset + 1)}
+        renderDate={renderDate}
+        onRejected={() => changeRenderDate(1)}
         ontouchstart={handleTouchStart}
         ontouchmove={handleTouchMove}
         ontouchend={handleTouchEnd}
